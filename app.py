@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import streamlit as st
 import plotly.graph_objects as go
-from student import student_panel 
+from student import student_panel
 from faculty import faculty
+from newfaculty import new_faculty_panel
 from login import login
 
 # ----------------- LOAD ENV -----------------
@@ -90,7 +91,7 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 # Navigation bar
-nav_options = ["Registrar", "Faculty", "Student"]
+nav_options = ["Registrar", "Faculty", "Faculty Tasks", "Student"]
 selected_nav = st.sidebar.radio("Navigation", nav_options)
 
 # ----------------- REGISTRAR SECTION -----------------
@@ -236,6 +237,10 @@ if selected_nav == "Registrar" and st.session_state['role'] == "registrar":
 # ----------------- FACULTY SECTION -----------------
 elif selected_nav == "Faculty" and st.session_state['role'] == "faculty":
     faculty(df_merged, semesters_map, db)
+
+# ----------------- FACULTY TASKS SECTION -----------------
+elif selected_nav == "Faculty Tasks" and st.session_state['role'] == "faculty":
+    new_faculty_panel(db)
 
 # ----------------- STUDENT SECTION -----------------
 elif selected_nav == "Student" and st.session_state['role'] == "student":

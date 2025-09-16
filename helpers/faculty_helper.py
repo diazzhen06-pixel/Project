@@ -139,6 +139,53 @@ def get_teachers(course: str = None):
 
     return summary
 
+def get_all_subjects(db):
+    """
+    Fetches all subjects from the subjects collection.
+    """
+    return pd.DataFrame(list(db.subjects.find({}, {"Description": 1, "Units": 1, "Teacher": 1})))
+
+def get_all_teachers(db):
+    """
+    Fetches all unique teacher names from the subjects collection.
+    """
+    return db.subjects.distinct("Teacher")
+
+def update_subject_teacher(db, subject_code: str, teacher_name: str) -> bool:
+    """
+    Updates the teacher for a given subject in the subjects collection.
+    Returns True if the update was successful, False otherwise.
+    """
+    result = db.subjects.update_one(
+        {"_id": subject_code},
+        {"$set": {"Teacher": teacher_name}}
+    )
+    return result.modified_count > 0
+
+def get_students_in_subject(db, subject_code: str) -> list:
+    """
+    Fetches all students enrolled in a specific subject.
+    """
+    pipeline = [
+        {"$match": {"SubjectCodes": subject_code}},
+        {"$lookup": {
+            "from": "students",
+            "localField": "StudentID",
+            "foreignField": "_id",
+            "as": "student_info"
+        }},
+        {"$unwind": "$student_info"},
+        {"$project": {
+            "_id": 0,
+            "StudentID": "$StudentID",
+            "Name": "$student_info.Name",
+            "Course": "$student_info.Course",
+            "YearLevel": "$student_info.YearLevel"
+        }}
+    ]
+    return list(db.grades.aggregate(pipeline))
+
+
 if __name__ == "__main__":
 
     # Assign teacher
