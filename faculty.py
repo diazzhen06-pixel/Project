@@ -8,8 +8,14 @@ def generate_excel(df, filename):
     """Export dataframe to Excel (returns bytes)."""
     from io import BytesIO
     buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Report")
+    try:
+        # Try xlsxwriter first
+        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name="Report")
+    except ImportError:
+        # fallback to openpyxl if xlsxwriter not installed
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Report")
     buffer.seek(0)
     return buffer.read()
 
@@ -27,9 +33,9 @@ def highlight_failed(val):
 
 def get_subject_description(subject_code, db=None):
     """Return subject description from DB if available, otherwise placeholder."""
-    if db:
+    if db is not None:
         doc = db["subjects"].find_one({"_id": subject_code}, {"Description": 1})
-        if doc:
+        if doc is not None:
             return doc.get("Description", f"Description for {subject_code}")
     return f"Description for {subject_code}"
 
@@ -37,7 +43,6 @@ def get_subject_description(subject_code, db=None):
 # ---------- FACULTY DASHBOARD ----------
 def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db=None):
     st.subheader("👩‍🏫 Faculty Dashboard")
-
     st.info(f"Welcome, {selected_teacher_name}!")
 
     taught_subjects_df = pd.DataFrame(list(subjects_map.values()))
@@ -52,7 +57,6 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     selected_subject_code = st.selectbox(
         "Select a Subject", [""] + sorted(taught_subjects_df["SubjectCode"].unique()), key="faculty_subject"
     )
-
     if not selected_subject_code:
         return
 
@@ -157,10 +161,12 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
     with col_download_pdf:
         # Get one semester ID to fetch SchoolYear
-        semester_id = df_subject_grades["SemesterID"].dropna().iloc[0] if not df_subject_grades["SemesterID"].dropna().empty else None
-        semester_info = semesters_map.get(semester_id, "N/A")
+        semester_id = None
+        non_null_semesters = df_subject_grades["SemesterID"].dropna()
+        if not non_null_semesters.empty:
+            semester_id = non_null_semesters.iloc[0]
 
-        # Since semesters_map only stores strings
+        semester_info = semesters_map.get(semester_id, "N/A")
         semester_name = semester_info
         school_year = semester_info
 
@@ -189,6 +195,10 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
 # ---------- ENTRY POINT ----------
 def faculty(df, semesters_map, db):
+    if db is None:
+        st.warning("⚠️ Database connection not available.")
+        return
+
     # Build subjects_map from DB
     subjects_cursor = db["subjects"].find({}, {"_id": 1, "Description": 1, "Units": 1, "Teacher": 1})
     subjects_map = {doc["_id"]: doc for doc in subjects_cursor}
