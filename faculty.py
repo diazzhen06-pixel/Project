@@ -1,12 +1,13 @@
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+import plotly.express as px
+from io import BytesIO
 
 
 # ---------- HELPERS ----------
 def generate_excel(df, filename):
     """Export dataframe to Excel (returns bytes)."""
-    from io import BytesIO
     buffer = BytesIO()
     try:
         # Try xlsxwriter first
@@ -32,7 +33,6 @@ def highlight_failed(val):
 
 
 from helpers.faculty_helper import get_grade_distribution_by_faculty
-import plotly.express as px
 
 def get_subject_description(subject_code, db=None):
     """Return subject description from DB if available, otherwise placeholder."""
@@ -49,8 +49,8 @@ def class_grade_distribution_report(db, teacher_name):
     try:
         semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
         # Sort semesters: First by SchoolYear descending, then by a custom semester order
-        semester_order = ["First", "Second", "Summer"]
-        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.index(s.get("Semester", ""))) if s.get("Semester") in semester_order else -1, reverse=True)
+        semester_order = {"First": 1, "Second": 2, "Summer": 3}
+        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
 
         semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
         semester_ids = [""] + list(semester_options.keys())
