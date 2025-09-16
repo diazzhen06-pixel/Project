@@ -25,14 +25,19 @@ def get_difficulty_level(fail_rate, dropout_rate):
     else:
         return "Low"
 
-def subject_difficulty_heatmap_panel(db):
-    st.header("Subject Difficulty Heatmap")
+def subject_difficulty_heatmap_panel(db, teacher_name=None):
+    if teacher_name is None:
+        st.header("Subject Difficulty Heatmap")
 
     # Fetch data
     grades_col = db["grades"]
     subjects_col = db["subjects"]
 
-    all_grades = list(grades_col.find({}))
+    query = {}
+    if teacher_name:
+        query = {"Teachers": teacher_name}
+
+    all_grades = list(grades_col.find(query))
     all_subjects = list(subjects_col.find({}))
 
     if not all_grades or not all_subjects:
@@ -47,8 +52,13 @@ def subject_difficulty_heatmap_panel(db):
     for _, row in df_grades.iterrows():
         subjects = row.get('SubjectCodes', [])
         grades = row.get('Grades', [])
+        teachers = row.get('Teachers', [])
 
         for i, subject_code in enumerate(subjects):
+            # If in teacher view, only process subjects for that teacher
+            if teacher_name and (i >= len(teachers) or teachers[i] != teacher_name):
+                continue
+
             if subject_code not in subject_data:
                 subject_data[subject_code] = {'enrolled': 0, 'failed': 0, 'dropped': 0}
 
@@ -79,7 +89,7 @@ def subject_difficulty_heatmap_panel(db):
         })
 
     if not subject_stats:
-        st.warning("Could not compute subject statistics.")
+        st.warning("Could not compute subject statistics for the selected teacher.")
         return
 
     display_df = pd.DataFrame(subject_stats)
@@ -102,5 +112,6 @@ def subject_difficulty_heatmap_panel(db):
         .applymap(color_difficulty, subset=['Difficulty Level']) \
         .format({'Fail Rate(%)': '{:.2f}%', 'Dropout Rate(%)': '{:.2f}%'})
 
-    st.subheader("Subjects Analysis")
+    if teacher_name is None:
+        st.subheader("Subjects Analysis")
     st.dataframe(styled_df)

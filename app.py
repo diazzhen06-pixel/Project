@@ -8,8 +8,6 @@ from student import student_panel
 from faculty import faculty
 from newfaculty import new_faculty_panel
 from login import login
-from student_progress_tracker import student_progress_tracker_panel
-from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -93,7 +91,7 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 # Navigation bar
-nav_options = ["Registrar", "Student Progress Tracker", "Subject Difficulty Heatmap", "Faculty", "Faculty Tasks", "Student"]
+nav_options = ["Registrar", "Faculty", "Faculty Tasks", "Student"]
 selected_nav = st.sidebar.radio("Navigation", nav_options)
 
 # ----------------- REGISTRAR SECTION -----------------
@@ -235,14 +233,6 @@ if selected_nav == "Registrar" and st.session_state['role'] == "registrar":
                 height=500,
             )
             st.plotly_chart(fig, use_container_width=True)
-
-# ----------------- STUDENT PROGRESS TRACKER SECTION -----------------
-elif selected_nav == "Student Progress Tracker" and st.session_state['role'] == "registrar":
-    student_progress_tracker_panel(db)
-
-# ----------------- SUBJECT DIFFICULTY HEATMAP SECTION -----------------
-elif selected_nav == "Subject Difficulty Heatmap" and st.session_state['role'] == "registrar":
-    subject_difficulty_heatmap_panel(db)
 
 # ----------------- FACULTY SECTION -----------------
 elif selected_nav == "Faculty" and st.session_state['role'] == "faculty":
