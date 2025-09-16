@@ -31,6 +31,9 @@ def highlight_failed(val):
     return f"color: {color}; font-weight: bold;"
 
 
+from helpers.faculty_helper import get_grade_distribution_by_faculty
+import plotly.express as px
+
 def get_subject_description(subject_code, db=None):
     """Return subject description from DB if available, otherwise placeholder."""
     if db is not None:
@@ -38,6 +41,90 @@ def get_subject_description(subject_code, db=None):
         if doc is not None:
             return doc.get("Description", f"Description for {subject_code}")
     return f"Description for {subject_code}"
+
+def class_grade_distribution_report(db, teacher_name):
+    st.subheader("📊 Class Grade Distribution Report")
+
+    # Get semester list
+    try:
+        semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
+        # Sort semesters: First by SchoolYear descending, then by a custom semester order
+        semester_order = ["First", "Second", "Summer"]
+        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.index(s.get("Semester", ""))) if s.get("Semester") in semester_order else -1, reverse=True)
+
+        semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
+        semester_ids = [""] + list(semester_options.keys())
+
+    except Exception as e:
+        st.error(f"Error fetching semesters: {e}")
+        return
+
+    selected_semester_id = st.selectbox(
+        "Select Semester and School Year",
+        options=semester_ids,
+        format_func=lambda x: semester_options.get(x, "Select..."),
+    )
+
+    if not selected_semester_id:
+        st.info("Please select a semester to view the report.")
+        return
+
+    # Get data for the table
+    df_dist = get_grade_distribution_by_faculty(db, teacher_name, selected_semester_id)
+
+    if df_dist.empty:
+        st.warning("No data found for the selected criteria.")
+        return
+
+    st.markdown("### Grade Distribution by Program")
+    st.dataframe(df_dist, use_container_width=True)
+
+    st.markdown("### Grade Distribution Histograms")
+
+    # This part is for fetching raw grades for plotting
+    pipeline = [
+        {"$match": {"SemesterID": selected_semester_id, "Teachers": teacher_name}},
+        {"$unwind": {"path": "$Teachers", "includeArrayIndex": "idx"}},
+        {"$match": {"Teachers": teacher_name}},
+        {"$unwind": {"path": "$Grades", "includeArrayIndex": "grade_idx"}},
+        {"$match": {"$expr": {"$eq": ["$idx", "$grade_idx"]}}},
+        {"$lookup": {"from": "students", "localField": "StudentID", "foreignField": "_id", "as": "student"}},
+        {"$unwind": "$student"},
+        {"$project": {"_id": 0, "Grade": "$Grades", "Course": "$student.Course"}}
+    ]
+
+    try:
+        raw_grades_data = list(db.grades.aggregate(pipeline))
+        if not raw_grades_data:
+            st.warning("No grades found for plotting.")
+            return
+    except Exception as e:
+        st.error(f"Error fetching grades for histogram: {e}")
+        return
+
+    df_grades = pd.DataFrame(raw_grades_data)
+
+    # Get program names from curriculum
+    courses = df_grades['Course'].unique()
+    curriculum_map = {c['programCode']: c['programName'] for c in db.curriculum.find({"programCode": {"$in": list(courses)}})}
+    df_grades['programName'] = df_grades['Course'].map(curriculum_map).fillna(df_grades['Course'])
+
+    for program_name, group in df_grades.groupby('programName'):
+        st.markdown(f"#### {program_name}")
+
+        fig = px.histogram(
+            group,
+            x="Grade",
+            title=f"Grade Distribution for {program_name}",
+            nbins=20, # Adjust number of bins for better visualization
+            template="plotly_dark"
+        )
+        fig.update_layout(
+            xaxis_title="Grade",
+            yaxis_title="Number of Students",
+            bargap=0.1
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 
 # ---------- FACULTY DASHBOARD ----------
@@ -210,6 +297,22 @@ def faculty(df, semesters_map, db):
 
     selected_teacher_name = st.selectbox("Select Teacher", [""] + teacher_list, key="faculty_teacher")
     if not selected_teacher_name:
+        st.info("Please select a teacher to continue.")
         return
 
-    faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db)
+    st.markdown("---")
+
+    # Create tabs for different reports
+    tab1, tab2 = st.tabs(["📘 Class Report", "📊 Class Grade Distribution"])
+
+    with tab1:
+        # The existing class report functionality
+        st.header("📘 Class Report")
+        st.info("This report provides a detailed view of student performance in a specific subject.")
+        faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db)
+
+    with tab2:
+        # The new class grade distribution report
+        st.header("📊 Class Grade Distribution")
+        st.info("This report shows the grade distribution across different programs for the selected semester.")
+        class_grade_distribution_report(db, selected_teacher_name)
