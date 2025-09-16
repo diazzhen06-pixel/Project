@@ -13,12 +13,13 @@ def assign_teacher_to_subject_ui(db):
     subject_list = subjects['_id'].tolist()
     selected_subject = st.selectbox("Select Subject", [""] + subject_list)
 
-    teachers = faculty_helper.get_all_teachers(db)
-    if not teachers:
+    teachers = faculty_helper.get_teachers(db)
+    if teachers.empty:
         st.warning("No teachers found.")
         return
 
-    teacher_list = sorted(list(set(teachers)))
+
+    teacher_list = sorted(teachers["Teacher"].tolist())
     selected_teacher = st.selectbox("Select Teacher", [""] + teacher_list)
 
     if st.button("Assign Teacher"):

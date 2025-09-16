@@ -7,6 +7,8 @@ from pymongo.collection import Collection
 from typing import List, Optional
 import pandas as pd
 
+from helpers.cache_helper import cache_meta
+
 
 from pymongo import MongoClient
 
@@ -87,8 +89,8 @@ def get_student_grades(db, student_id: int, semester_id: int) -> Optional[dict]:
     Retrieve the full grade document for a student in a semester.
     """
     return db["grades"].find_one({"StudentID": student_id, "SemesterID": semester_id})
-
-def get_teachers(course: str = None):
+@cache_meta(ttl=1440)  # 1 day
+def get_teachers(db,course: str = None):
     """
     Fetches all teachers who taught subjects to students of a specific course.
     If no course is specified, it fetches all teachers.
