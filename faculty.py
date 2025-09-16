@@ -33,6 +33,8 @@ def highlight_failed(val):
 
 
 from helpers.faculty_helper import get_grade_distribution_by_faculty
+from student_progress_tracker import student_progress_tracker_panel
+from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
 
 def get_subject_description(subject_code, db=None):
     """Return subject description from DB if available, otherwise placeholder."""
@@ -303,7 +305,7 @@ def faculty(df, semesters_map, db):
     st.markdown("---")
 
     # Create tabs for different reports
-    tab1, tab2 = st.tabs(["📘 Class Report", "📊 Class Grade Distribution"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📘 Class Report", "📊 Class Grade Distribution", "📈 Student Progress Tracker", "🔥 Subject Difficulty Heatmap"])
 
     with tab1:
         # The existing class report functionality
@@ -316,3 +318,15 @@ def faculty(df, semesters_map, db):
         st.header("📊 Class Grade Distribution")
         st.info("This report shows the grade distribution across different programs for the selected semester.")
         class_grade_distribution_report(db, selected_teacher_name)
+
+    with tab3:
+        # The new student progress tracker
+        st.header("📈 Student Progress Tracker")
+        st.info("This report shows the longitudinal performance for individual students.")
+        student_progress_tracker_panel(db, teacher_name=selected_teacher_name)
+
+    with tab4:
+        # The new subject difficulty heatmap
+        st.header("🔥 Subject Difficulty Heatmap")
+        st.info("This report visualizes subjects with high failure or dropouts.")
+        subject_difficulty_heatmap_panel(db, teacher_name=selected_teacher_name)

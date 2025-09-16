@@ -22,7 +22,7 @@ def get_trend(grades):
         return "N/A"
 
     # Check for high stable performance
-    if all(g >= 3.5 for g in grades):
+    if all(g >= 3.5 for g in grades if pd.notna(g)):
         return "Stable High"
 
     # Check for improvement
@@ -35,20 +35,25 @@ def get_trend(grades):
 
     return "Stable"
 
-def student_progress_tracker_panel(db):
-    st.header("Student Progress Tracker")
+def student_progress_tracker_panel(db, teacher_name=None):
+    if teacher_name is None:
+        st.header("Student Progress Tracker")
+        # Filters for registrar view
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            subject_list = [""] + sorted(db["subjects"].distinct("_id"))
+            selected_subject = st.selectbox("Filter by Subject", subject_list, key="spt_subject")
+        with col2:
+            course_list = [""] + sorted(db["students"].distinct("Course"))
+            selected_course = st.selectbox("Filter by Course", course_list, key="spt_course")
+        with col3:
+            year_level_list = [""] + sorted(db["students"].distinct("YearLevel"))
+            selected_year_level = st.selectbox("Filter by Year Level", year_level_list, key="spt_year")
+    else:
+        selected_subject = None
+        selected_course = None
+        selected_year_level = None
 
-    # Filters
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        subject_list = [""] + sorted(db["subjects"].distinct("_id"))
-        selected_subject = st.selectbox("Filter by Subject", subject_list)
-    with col2:
-        course_list = [""] + sorted(db["students"].distinct("Course"))
-        selected_course = st.selectbox("Filter by Course", course_list)
-    with col3:
-        year_level_list = [""] + sorted(db["students"].distinct("YearLevel"))
-        selected_year_level = st.selectbox("Filter by Year Level", year_level_list)
 
     # Data loading
     grades_col = db["grades"]
@@ -65,22 +70,28 @@ def student_progress_tracker_panel(db):
             "Semester": "$semester_info.Semester",
             "SchoolYear": "$semester_info.SchoolYear",
             "Grades": 1,
-            "SubjectCodes": 1
+            "SubjectCodes": 1,
+            "Teachers": 1,
         }}
     ]
+
+    if teacher_name:
+        pipeline.insert(0, {"$match": {"Teachers": teacher_name}})
+
     df = pd.DataFrame(list(grades_col.aggregate(pipeline)))
 
     if df.empty:
         st.warning("No data found.")
         return
 
-    # Apply filters
-    if selected_subject:
-        df = df[df['SubjectCodes'].apply(lambda x: selected_subject in x if isinstance(x, list) else False)]
-    if selected_course:
-        df = df[df['Course'] == selected_course]
-    if selected_year_level:
-        df = df[df['YearLevel'] == selected_year_level]
+    # Apply filters if not in teacher view
+    if teacher_name is None:
+        if selected_subject:
+            df = df[df['SubjectCodes'].apply(lambda x: selected_subject in x if isinstance(x, list) else False)]
+        if selected_course:
+            df = df[df['Course'] == selected_course]
+        if selected_year_level:
+            df = df[df['YearLevel'] == selected_year_level]
 
     if df.empty:
         st.warning("No students found for the selected filters.")
@@ -106,10 +117,10 @@ def student_progress_tracker_panel(db):
     pivot_df['Overall Trend'] = trends
 
     # Rename columns for display
-    pivot_df.rename(columns={'1st Sem': 'FirstSem', '2nd Sem': 'SecondSem'}, inplace=True)
+    pivot_df.rename(columns={'1st Sem': 'FirstSem', '2nd Sem': 'SecondSem', 'StudentID': 'Student ID'}, inplace=True)
 
     # Display table
-    st.dataframe(pivot_df[['StudentID', 'Name', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']])
+    st.dataframe(pivot_df[['Student ID', 'Name', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']].fillna('N/A'))
 
     # Chart
     st.subheader("Performance Chart")
@@ -117,7 +128,7 @@ def student_progress_tracker_panel(db):
     if not pivot_df.empty:
         # Let user select a student from the filtered list
         student_options = pivot_df['Name'].tolist()
-        selected_student_name = st.selectbox("Select Student to Visualize", options=student_options)
+        selected_student_name = st.selectbox("Select Student to Visualize", options=student_options, key="spt_student_viz")
 
         if selected_student_name:
             student_data = pivot_df[pivot_df['Name'] == selected_student_name].iloc[0]
