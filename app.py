@@ -20,7 +20,7 @@ if not MONGO_USER or not MONGO_PASS:
 # ----------------- CONNECT TO MONGODB -----------------
 @st.cache_resource
 def get_client():
-    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@cluster0.fav2kov.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@cluster0.l7fdbmf.mongodb.net"
     return MongoClient(uri)
 
 client = get_client()
