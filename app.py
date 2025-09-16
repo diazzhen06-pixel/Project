@@ -5,8 +5,8 @@ from pymongo import MongoClient
 import streamlit as st
 import plotly.graph_objects as go
 from student import student_panel 
-from faculty import faculty   # ✅ import wrapper, not faculty_dashboard
-
+from faculty import faculty
+from login import login
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -25,6 +25,14 @@ def get_client():
 
 client = get_client()
 db = client["mit261"]
+
+# ----------------- SESSION STATE -----------------
+if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
+
+if not st.session_state['logged_in']:
+    login(db)
+    st.stop()
 
 # ----------------- LOAD DATA -----------------
 @st.cache_data
@@ -76,12 +84,17 @@ df_merged, semesters_map = load_data()
 st.set_page_config(page_title="Student Grades Dashboard", layout="wide")
 st.title("MIT Student Portal")
 
+# Logout Button
+if st.sidebar.button("Logout"):
+    st.session_state['logged_in'] = False
+    st.rerun()
+
 # Navigation bar
 nav_options = ["Registrar", "Faculty", "Student"]
 selected_nav = st.sidebar.radio("Navigation", nav_options)
 
 # ----------------- REGISTRAR SECTION -----------------
-if selected_nav == "Registrar":
+if selected_nav == "Registrar" and st.session_state['role'] == "registrar":
     st.header(" Registrar Dashboard")
 
     # Dropdowns
@@ -221,9 +234,11 @@ if selected_nav == "Registrar":
             st.plotly_chart(fig, use_container_width=True)
 
 # ----------------- FACULTY SECTION -----------------
-elif selected_nav == "Faculty":
+elif selected_nav == "Faculty" and st.session_state['role'] == "faculty":
     faculty(df_merged, semesters_map, db)
 
 # ----------------- STUDENT SECTION -----------------
-elif selected_nav == "Student":
+elif selected_nav == "Student" and st.session_state['role'] == "student":
     student_panel()
+else:
+    st.warning("You do not have access to this page.")
