@@ -46,23 +46,6 @@ subjects:
   "Teacher": "Prof. Jake Guinto"
 }
 
-userAccounts:
-{
-  "_id": {
-    "$oid": "68b664698519ad27d3877a87"
-  },
-  "username": "faculty",
-  "role": "faculty",
-  "linkedId": null,
-  "passwordHash": {
-    "$binary": {
-      "base64": "JDJiJDEyJDRhTW1DLnk2a2VmQ2pKeEUxZk5YaXUvSkMyajI5MjUzWHY0SkNtUk1HTmZXMnJmUldMM2hD",
-      "subType": "00"
-    }
-  },
-  "fullName": "",
-  "UID": 0
-}
 
 curriculum:
 {

@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from io import BytesIO
 
+# Import the helper functions and panels
+# You will need to ensure these files exist and contain the correct functions
+from helpers.faculty_helper import get_grade_distribution_by_faculty
+from student_progress_tracker import student_progress_tracker_panel
+from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
+
 
 # ---------- HELPERS ----------
 def generate_excel(df, filename):
@@ -32,10 +38,6 @@ def highlight_failed(val):
     return f"color: {color}; font-weight: bold;"
 
 
-from helpers.faculty_helper import get_grade_distribution_by_faculty
-from student_progress_tracker import student_progress_tracker_panel
-from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
-
 def get_subject_description(subject_code, db=None):
     """Return subject description from DB if available, otherwise placeholder."""
     if db is not None:
@@ -43,6 +45,7 @@ def get_subject_description(subject_code, db=None):
         if doc is not None:
             return doc.get("Description", f"Description for {subject_code}")
     return f"Description for {subject_code}"
+
 
 def class_grade_distribution_report(db, teacher_name):
     st.subheader("📊 Class Grade Distribution Report")

@@ -83,7 +83,7 @@ df_merged, semesters_map = load_data()
 
 # ----------------- STREAMLIT UI -----------------
 st.set_page_config(page_title="Student Grades Dashboard", layout="wide")
-st.title("MIT Student Portal")
+st.title("MIT Faculty Portal")
 
 # Logout Button
 if st.sidebar.button("Logout"):
