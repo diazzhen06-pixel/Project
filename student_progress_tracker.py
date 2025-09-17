@@ -103,8 +103,19 @@ def student_progress_tracker_panel(db, teacher_name=None):
     # Pivot table to get semesters as columns
     pivot_df = df.pivot_table(index=['StudentID', 'Name'], columns='Semester', values='AvgGrade').reset_index()
 
-    # Define semester columns
-    sem_cols = ['1st Sem', '2nd Sem', 'Summer']
+    # Standardize semester column names
+    rename_map = {
+        '1st Sem': 'FirstSem',
+        'First': 'FirstSem',
+        '2nd Sem': 'SecondSem',
+        'Second': 'SecondSem',
+    }
+    pivot_df.rename(columns={k: v for k, v in rename_map.items() if k in pivot_df.columns}, inplace=True)
+    if 'StudentID' in pivot_df.columns:
+        pivot_df.rename(columns={'StudentID': 'Student ID'}, inplace=True)
+
+    # Define semester columns with standard names
+    sem_cols = ['FirstSem', 'SecondSem', 'Summer']
     for col in sem_cols:
         if col not in pivot_df.columns:
             pivot_df[col] = None
@@ -115,9 +126,6 @@ def student_progress_tracker_panel(db, teacher_name=None):
         grades = [row[col] for col in sem_cols if pd.notna(row[col])]
         trends.append(get_trend(grades))
     pivot_df['Overall Trend'] = trends
-
-    # Rename columns for display
-    pivot_df.rename(columns={'1st Sem': 'FirstSem', '2nd Sem': 'SecondSem', 'StudentID': 'Student ID'}, inplace=True)
 
     # Display table
     st.dataframe(pivot_df[['Student ID', 'Name', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']].fillna('N/A'))
