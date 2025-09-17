@@ -9,6 +9,8 @@ from io import BytesIO
 from helpers.faculty_helper import get_grade_distribution_by_faculty
 from student_progress_tracker import student_progress_tracker_panel
 from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
+from intervention_candidates_list import intervention_candidates_list_panel
+from grade_submission_status import grade_submission_status_panel
 
 
 # ---------- HELPERS ----------
@@ -308,7 +310,15 @@ def faculty(df, semesters_map, db):
     st.markdown("---")
 
     # Create tabs for different reports
-    tab1, tab2, tab3, tab4 = st.tabs(["📘 Class Report", "📊 Class Grade Distribution", "📈 Student Progress Tracker", "🔥 Subject Difficulty Heatmap"])
+    tab_titles = [
+        "📘 Class Report",
+        "📊 Class Grade Distribution",
+        "📈 Student Progress Tracker",
+        "🔥 Subject Difficulty Heatmap",
+        "🧑‍🏫 Intervention Candidates List",
+        "📝 Grade Submission Status"
+    ]
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(tab_titles)
 
     with tab1:
         # The existing class report functionality
@@ -333,3 +343,11 @@ def faculty(df, semesters_map, db):
         st.header("🔥 Subject Difficulty Heatmap")
         st.info("This report visualizes subjects with high failure or dropouts.")
         subject_difficulty_heatmap_panel(db, teacher_name=selected_teacher_name)
+
+    with tab5:
+        # The new intervention candidates list
+        intervention_candidates_list_panel(db, teacher_name=selected_teacher_name)
+
+    with tab6:
+        # The new grade submission status
+        grade_submission_status_panel(db, teacher_name=selected_teacher_name)
