@@ -309,8 +309,8 @@ def faculty(df, semesters_map, db):
 
     st.markdown("---")
 
-    # Create tabs for different reports
-    tab_titles = [
+    # Dropdown for report selection
+    report_options = [
         "📘 Class Report",
         "📊 Class Grade Distribution",
         "📈 Student Progress Tracker",
@@ -318,36 +318,31 @@ def faculty(df, semesters_map, db):
         "🧑‍🏫 Intervention Candidates List",
         "📝 Grade Submission Status"
     ]
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(tab_titles)
+    selected_report = st.selectbox("Select a Report", report_options)
 
-    with tab1:
-        # The existing class report functionality
+    # Render the selected report
+    if selected_report == "📘 Class Report":
         st.header("📘 Class Report")
         st.info("This report provides a detailed view of student performance in a specific subject.")
         faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db)
 
-    with tab2:
-        # The new class grade distribution report
+    elif selected_report == "📊 Class Grade Distribution":
         st.header("📊 Class Grade Distribution")
         st.info("This report shows the grade distribution across different programs for the selected semester.")
         class_grade_distribution_report(db, selected_teacher_name)
 
-    with tab3:
-        # The new student progress tracker
+    elif selected_report == "📈 Student Progress Tracker":
         st.header("📈 Student Progress Tracker")
         st.info("This report shows the longitudinal performance for individual students.")
         student_progress_tracker_panel(db, teacher_name=selected_teacher_name)
 
-    with tab4:
-        # The new subject difficulty heatmap
+    elif selected_report == "🔥 Subject Difficulty Heatmap":
         st.header("🔥 Subject Difficulty Heatmap")
         st.info("This report visualizes subjects with high failure or dropouts.")
         subject_difficulty_heatmap_panel(db, teacher_name=selected_teacher_name)
 
-    with tab5:
-        # The new intervention candidates list
+    elif selected_report == "🧑‍🏫 Intervention Candidates List":
         intervention_candidates_list_panel(db, teacher_name=selected_teacher_name)
 
-    with tab6:
-        # The new grade submission status
+    elif selected_report == "📝 Grade Submission Status":
         grade_submission_status_panel(db, teacher_name=selected_teacher_name)
