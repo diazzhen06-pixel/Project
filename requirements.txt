@@ -5,9 +5,7 @@ python-dotenv
 matplotlib
 plotly
 xlsxwriter
-<<<<<<< feature/custom-query-builder
 openpyxl
 bcrypt
-=======
 openpyxl
->>>>>>> main
+
