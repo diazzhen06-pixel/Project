@@ -65,7 +65,7 @@ def subject_difficulty_heatmap_panel(db, teacher_name=None):
             subject_data[subject_code]['enrolled'] += 1
             grade = grades[i] if i < len(grades) else None
 
-            if grade == 5.0:
+            if isinstance(grade, (int, float)) and grade < 75:
                 subject_data[subject_code]['failed'] += 1
             elif str(grade).upper() in ['DRP', 'W']:
                 subject_data[subject_code]['dropped'] += 1
