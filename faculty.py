@@ -11,6 +11,7 @@ from student_progress_tracker import student_progress_tracker_panel
 from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
 from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
+from custom_query_builder import custom_query_builder_panel
 
 
 # ---------- HELPERS ----------
@@ -316,7 +317,8 @@ def faculty(df, semesters_map, db):
         "📈 Student Progress Tracker",
         "🔥 Subject Difficulty Heatmap",
         "🧑‍🏫 Intervention Candidates List",
-        "📝 Grade Submission Status"
+        "📝 Grade Submission Status",
+        "🔎 Custom Query Builder"
     ]
     selected_report = st.selectbox("Select a Report", report_options)
 
@@ -346,3 +348,6 @@ def faculty(df, semesters_map, db):
 
     elif selected_report == "📝 Grade Submission Status":
         grade_submission_status_panel(db, teacher_name=selected_teacher_name)
+
+    elif selected_report == "🔎 Custom Query Builder":
+        custom_query_builder_panel(db)
