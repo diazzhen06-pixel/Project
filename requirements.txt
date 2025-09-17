@@ -86,3 +86,11 @@ matplotlib
 plotly
 xlsxwriter
 openpyxl
+treamlit
+pandas
+pymongo
+python-dotenv
+matplotlib
+plotly
+xlsxwriter
+openpyxl
