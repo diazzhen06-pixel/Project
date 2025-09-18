@@ -50,7 +50,7 @@ def get_grade_distribution_data(db, teacher_name, semester_id, program_code=None
             },
             "grades": {"$push": "$Grades"}
         }}
-    ]
+    ])
 
     try:
         data = list(db.grades.aggregate(pipeline))
