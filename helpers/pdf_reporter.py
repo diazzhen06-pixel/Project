@@ -27,7 +27,11 @@ class PDF(FPDF):
         self.ln()
 
     def add_image_from_bytes(self, image_bytes, w=0, image_format="png"):
-        self.image(BytesIO(image_bytes), w=w, type=image_format)
+        # The original code wrapped image_bytes in a BytesIO object, which caused
+        # an AttributeError in older versions of the fpdf library.
+        # By passing the raw bytes directly, we avoid this issue, as fpdf can
+        # handle raw image data when the 'type' is specified.
+        self.image(image_bytes, w=w, type=image_format)
 
     def add_table(self, df: pd.DataFrame):
         self.set_font('Arial', 'B', 10)
