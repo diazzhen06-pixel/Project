@@ -27,7 +27,7 @@ class PDF(FPDF):
         self.ln()
 
     def add_image_from_bytes(self, image_bytes, w=0):
-        self.image(BytesIO(image_bytes), w=w)
+        self.image(BytesIO(image_bytes), w=w, type='PNG')
 
     def add_table(self, df: pd.DataFrame):
         self.set_font('Arial', 'B', 10)
