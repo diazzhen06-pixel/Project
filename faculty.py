@@ -12,6 +12,10 @@ from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
 from helpers.utils import generate_excel
+from helpers.pdf_reporter import (
+    generate_faculty_report_pdf,
+    generate_grade_distribution_pdf,
+)
 
 
 # ---------- HELPERS ----------
@@ -72,6 +76,7 @@ def class_grade_distribution_report(db, teacher_name):
 
     # Generate histograms
     st.markdown("### Grade Distribution Histograms")
+    charts_for_pdf = []
 
     pipeline = [
         {"$match": {"SemesterID": selected_semester_id, "Teachers": teacher_name}},
@@ -120,6 +125,9 @@ def class_grade_distribution_report(db, teacher_name):
         )
         st.plotly_chart(fig, use_container_width=True)
 
+        chart_bytes = fig.to_image(format="png")
+        charts_for_pdf.append({"bytes": chart_bytes, "format": "png"})
+
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Report")
 
@@ -129,6 +137,20 @@ def class_grade_distribution_report(db, teacher_name):
         data=excel_bytes,
         file_name=f"GradeDistribution_{teacher_name}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    pdf_data = {
+        "teacher_name": teacher_name,
+        "semester_id": selected_semester_id,
+        "dataframe": df_dist,
+        "charts": charts_for_pdf,
+    }
+    pdf_bytes = generate_grade_distribution_pdf(pdf_data)
+    st.download_button(
+        label="⬇️ Download as PDF",
+        data=pdf_bytes,
+        file_name=f"GradeDistribution_{teacher_name}_{selected_semester_id}.pdf",
+        mime="application/pdf",
     )
 
 
@@ -193,6 +215,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     col2.metric("Total Students", total_students)
 
     # Charts
+    charts_for_pdf = []
     grouped_by_year = df_subject_grades.groupby("YearLevel")
 
     for year_level, group_df in grouped_by_year:
@@ -225,6 +248,10 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
                     va="bottom",
                 )
         st.pyplot(fig_hist)
+        hist_img_bytes = BytesIO()
+        fig_hist.savefig(hist_img_bytes, format="png")
+        hist_img_bytes.seek(0)
+        charts_for_pdf.append({"bytes": hist_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_hist)
 
         # Pass vs Fail
@@ -237,6 +264,10 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
             yval = bar.get_height()
             ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
         st.pyplot(fig_pf)
+        pf_img_bytes = BytesIO()
+        fig_pf.savefig(pf_img_bytes, format="png")
+        pf_img_bytes.seek(0)
+        charts_for_pdf.append({"bytes": pf_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_pf)
 
         st.markdown("---")
@@ -250,6 +281,27 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
         data=excel_bytes,
         file_name=f"FacultyReport_{selected_subject_code}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    subject_description = get_subject_description(selected_subject_code, db)
+    semester_id = df_subject_grades["SemesterID"].iloc[0] if not df_subject_grades.empty else "N/A"
+    semester_info = semesters_map.get(semester_id, "N/A")
+
+    pdf_data = {
+        "subject_code": selected_subject_code,
+        "teachers_str": selected_teacher_name,
+        "subject_description": subject_description,
+        "semester_info": semester_info,
+        "avg_gpa": avg_gpa,
+        "dataframe": df_subject_grades,
+        "charts": charts_for_pdf,
+    }
+    pdf_bytes = generate_faculty_report_pdf(pdf_data)
+    st.download_button(
+        label="⬇️ Download as PDF",
+        data=pdf_bytes,
+        file_name=f"FacultyReport_{selected_subject_code}.pdf",
+        mime="application/pdf",
     )
 
 

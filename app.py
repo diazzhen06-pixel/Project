@@ -8,6 +8,7 @@ from student import student_panel
 from faculty import faculty
 from newfaculty import new_faculty_panel
 from login import login
+from helpers.pdf_reporter import generate_faculty_report_pdf
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -243,6 +244,28 @@ if selected_nav == "Registrar" and role == "registrar":
                 height=500,
             )
 
+            # --- Download PDF ---
+            st.markdown("### 💾 Download Report")
+            if gpa_value is not None:
+                chart_bytes = fig.to_image(format="png")
+                pdf_data = {
+                    "subject_code": selected_subject,
+                    "teachers_str": teachers_str,
+                    "subject_description": subject_description,
+                    "semester_info": selected_semester,
+                    "avg_gpa": gpa_value,
+                    "dataframe": display_df,
+                    "charts": [chart_bytes],
+                }
+                pdf_bytes = generate_faculty_report_pdf(pdf_data)
+                st.download_button(
+                    label="⬇️ Download as PDF",
+                    data=pdf_bytes,
+                    file_name=f"ClassRecord_{selected_subject}_{selected_semester}.pdf",
+                    mime="application/pdf",
+                )
+            else:
+                st.warning("GPA calculation failed, PDF download is unavailable.")
 
             st.plotly_chart(fig, use_container_width=True)
 
