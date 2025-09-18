@@ -61,7 +61,7 @@ def generate_faculty_report_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
 
 
 def generate_grade_submission_status_pdf(data):
@@ -69,7 +69,7 @@ def generate_grade_submission_status_pdf(data):
     pdf.add_page()
     pdf.chapter_title("Grade Submission Status")
     pdf.add_table(data['dataframe'])
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
 
 
 def generate_intervention_candidates_pdf(data):
@@ -77,7 +77,7 @@ def generate_intervention_candidates_pdf(data):
     pdf.add_page()
     pdf.chapter_title("Intervention Candidates List")
     pdf.add_table(data['dataframe'])
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
 
 
 def generate_subject_difficulty_pdf(data):
@@ -85,7 +85,7 @@ def generate_subject_difficulty_pdf(data):
     pdf.add_page()
     pdf.chapter_title("Subject Difficulty Heatmap")
     pdf.add_table(data['dataframe'])
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
 
 
 def generate_student_progress_pdf(data):
@@ -93,7 +93,7 @@ def generate_student_progress_pdf(data):
     pdf.add_page()
     pdf.chapter_title("Student Progress Tracker")
     pdf.add_table(data['dataframe'])
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
 
 
 def generate_grade_distribution_pdf(data):
@@ -103,4 +103,4 @@ def generate_grade_distribution_pdf(data):
     pdf.chapter_body(f"Teacher: {data['teacher_name']}")
     pdf.chapter_body(f"Semester ID: {data['semester_id']}")
     pdf.add_table(data['dataframe'])
-    return pdf.output(dest='S')   # ✅ fixed
+    return pdf.output(dest='S').encode('latin-1')
