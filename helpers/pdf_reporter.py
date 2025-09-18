@@ -61,7 +61,7 @@ def generate_faculty_report_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
 
 
 def generate_grade_submission_status_pdf(data):
@@ -74,7 +74,7 @@ def generate_grade_submission_status_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
 
 
 def generate_intervention_candidates_pdf(data):
@@ -87,7 +87,7 @@ def generate_intervention_candidates_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
 
 
 def generate_subject_difficulty_pdf(data):
@@ -100,7 +100,7 @@ def generate_subject_difficulty_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
 
 
 def generate_student_progress_pdf(data):
@@ -113,7 +113,7 @@ def generate_student_progress_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
 
 
 def generate_grade_distribution_pdf(data):
@@ -130,4 +130,4 @@ def generate_grade_distribution_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')
