@@ -13,22 +13,10 @@ from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
 from helpers.pdf_reporter import generate_faculty_report_pdf, generate_grade_distribution_pdf
+from helpers.utils import generate_excel
 
 
 # ---------- HELPERS ----------
-def generate_excel(df, filename):
-    """Export dataframe to Excel (returns bytes)."""
-    buffer = BytesIO()
-    try:
-        # Try xlsxwriter first
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Report")
-    except ImportError:
-        # fallback to openpyxl if xlsxwriter not installed
-        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Report")
-    buffer.seek(0)
-    return buffer.read()
 
 
 
