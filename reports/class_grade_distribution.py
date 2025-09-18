@@ -2,8 +2,9 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from helpers.utils import generate_excel
+from helpers.data_helper import get_programs
 
-def get_grade_distribution_data(db, teacher_name, semester_id):
+def get_grade_distribution_data(db, teacher_name, semester_id, program_code=None, program_name=None):
     """
     Fetches grade distribution data for a given teacher and semester.
     Returns a pandas DataFrame.
@@ -33,6 +34,15 @@ def get_grade_distribution_data(db, teacher_name, semester_id):
             "as": "curriculum_info"
         }},
         {"$unwind": {"path": "$curriculum_info", "preserveNullAndEmptyArrays": True}},
+    ]
+
+    # Add program filters if provided
+    if program_code:
+        pipeline.append({"$match": {"student_info.Course": program_code}})
+    if program_name:
+        pipeline.append({"$match": {"curriculum_info.programName": program_name}})
+
+    pipeline.extend([
         {"$group": {
             "_id": {
                 "programCode": "$student_info.Course",
@@ -137,27 +147,41 @@ def class_grade_distribution_report(db, teacher_name):
     st.header("📊 Class Grade Distribution")
     st.info("This report shows the grade distribution across different programs for the selected semester.")
 
-    try:
-        semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
-        semester_order = {"First": 1, "Second": 2, "Summer": 3}
-        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
-        semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
-        semester_ids = [""] + list(semester_options.keys())
-    except Exception as e:
-        st.error(f"Error fetching semesters: {e}")
-        return
+    programs_df = get_programs(db)
+    program_codes = [""] + sorted(programs_df["programCode"].unique())
+    program_names = [""] + sorted(programs_df["programName"].unique())
 
-    selected_semester_id = st.selectbox(
-        "Select Semester and School Year",
-        options=semester_ids,
-        format_func=lambda x: semester_options.get(x, "Select..."),
-    )
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        try:
+            semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
+            semester_order = {"First": 1, "Second": 2, "Summer": 3}
+            semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
+            semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
+            semester_ids = [""] + list(semester_options.keys())
+        except Exception as e:
+            st.error(f"Error fetching semesters: {e}")
+            return
+        selected_semester_id = st.selectbox(
+            "Select Semester and School Year",
+            options=semester_ids,
+            format_func=lambda x: semester_options.get(x, "Select..."),
+        )
+    with col2:
+        selected_program_code = st.selectbox("Filter by Program Code", program_codes)
+    with col3:
+        if selected_program_code:
+            program_name_options = [""] + sorted(programs_df[programs_df["programCode"] == selected_program_code]["programName"].unique())
+        else:
+            program_name_options = program_names
+        selected_program_name = st.selectbox("Filter by Program Name", program_name_options)
+
 
     if not selected_semester_id:
         st.info("Please select a semester to view the report.")
         return
 
-    df_raw = get_grade_distribution_data(db, teacher_name, selected_semester_id)
+    df_raw = get_grade_distribution_data(db, teacher_name, selected_semester_id, selected_program_code, selected_program_name)
     if df_raw.empty:
         st.warning("No data found for the selected criteria.")
         return

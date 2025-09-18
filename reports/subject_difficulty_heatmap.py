@@ -4,6 +4,7 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 from helpers.utils import generate_excel
+from helpers.data_helper import get_programs
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -28,11 +29,31 @@ def get_difficulty_level(fail_rate, dropout_rate):
     else:
         return "Low"
 
-def get_subject_difficulty_data(db, teacher_name=None):
+def get_subject_difficulty_data(db, teacher_name=None, program_code=None, program_name=None):
     """Fetches and processes subject difficulty data using an aggregation pipeline."""
     pipeline = []
     if teacher_name:
         pipeline.append({"$match": {"Teachers": teacher_name}})
+
+    pipeline.extend([
+        {"$lookup": {
+            "from": "students",
+            "localField": "StudentID",
+            "foreignField": "_id",
+            "as": "student_info"
+        }},
+        {"$unwind": "$student_info"},
+    ])
+
+    if program_code:
+        programs_df = get_programs(db)
+        p_name = programs_df[programs_df['programCode'] == program_code]['programName'].iloc[0]
+        pipeline.append({"$match": {"$or": [
+            {"student_info.Course": program_code},
+            {"student_info.Course": p_name}
+        ]}})
+    elif program_name:
+        pipeline.append({"$match": {"student_info.Course": program_name}})
 
     pipeline.extend([
         {"$unwind": "$SubjectCodes"},
@@ -51,8 +72,8 @@ def get_subject_difficulty_data(db, teacher_name=None):
         }},
         {"$unwind": "$subject_info"},
         {"$project": {
-            "programCode": "$_id",
-            "programName": "$subject_info.Description",
+            "Subject Code": "$_id",
+            "Subject Name": "$subject_info.Description",
             "enrolled": "$enrolled",
             "failed": "$failed",
             "dropped": "$dropped"
@@ -90,7 +111,21 @@ def subject_difficulty_heatmap_panel(db, teacher_name=None):
     if teacher_name is None:
         st.header("Subject Difficulty Heatmap")
 
-    df = get_subject_difficulty_data(db, teacher_name)
+    programs_df = get_programs(db)
+    program_codes = [""] + sorted(programs_df["programCode"].unique())
+    program_names = [""] + sorted(programs_df["programName"].unique())
+
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_program_code = st.selectbox("Filter by Program Code", program_codes, key="sdh_program_code")
+    with col2:
+        if selected_program_code:
+            program_name_options = [""] + sorted(programs_df[programs_df["programCode"] == selected_program_code]["programName"].unique())
+        else:
+            program_name_options = program_names
+        selected_program_name = st.selectbox("Filter by Program Name", program_name_options, key="sdh_program_name")
+
+    df = get_subject_difficulty_data(db, teacher_name, selected_program_code, selected_program_name)
 
     if df.empty:
         st.warning("No data found to generate the heatmap.")
