@@ -12,10 +12,6 @@ from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
 from helpers.utils import generate_excel
-from helpers.pdf_reporter import (
-    generate_faculty_report_pdf,
-    generate_grade_distribution_pdf,
-)
 
 
 # ---------- HELPERS ----------
@@ -139,19 +135,6 @@ def class_grade_distribution_report(db, teacher_name):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
-    pdf_data = {
-        "teacher_name": teacher_name,
-        "semester_id": selected_semester_id,
-        "dataframe": df_dist,
-        "charts": charts_for_pdf,
-    }
-    pdf_bytes = generate_grade_distribution_pdf(pdf_data)
-    st.download_button(
-        label="⬇️ Download as PDF",
-        data=pdf_bytes,
-        file_name=f"GradeDistribution_{teacher_name}_{selected_semester_id}.pdf",
-        mime="application/pdf",
-    )
 
 
 # ---------- FACULTY DASHBOARD (CLASS REPORT) ----------
@@ -283,26 +266,6 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
-    subject_description = get_subject_description(selected_subject_code, db)
-    semester_id = df_subject_grades["SemesterID"].iloc[0] if not df_subject_grades.empty else "N/A"
-    semester_info = semesters_map.get(semester_id, "N/A")
-
-    pdf_data = {
-        "subject_code": selected_subject_code,
-        "teachers_str": selected_teacher_name,
-        "subject_description": subject_description,
-        "semester_info": semester_info,
-        "avg_gpa": avg_gpa,
-        "dataframe": df_subject_grades,
-        "charts": charts_for_pdf,
-    }
-    pdf_bytes = generate_faculty_report_pdf(pdf_data)
-    st.download_button(
-        label="⬇️ Download as PDF",
-        data=pdf_bytes,
-        file_name=f"FacultyReport_{selected_subject_code}.pdf",
-        mime="application/pdf",
-    )
 
 
 # ---------- ENTRY POINT ----------
