@@ -40,7 +40,7 @@ except Exception as e:
     )
     return True '''
 def assign_teacher_to_subject(subject_code: str, teacher_name: str) -> bool:
-    
+
     subjects_col: Collection = db["subjects"]
 
     grades_col: Collection = db["grades"]
@@ -224,120 +224,6 @@ def get_students_in_subject(db, subject_code: str) -> list:
     return list(db.grades.aggregate(pipeline))
 
 
-def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
-    """
-    Calculates the grade distribution for a given faculty member and semester, grouped by program.
-
-    Args:
-        db: The pymongo database instance.
-        teacher_name: The name of the teacher to filter by.
-        semester_id: The ID of the semester to filter by.
-
-    Returns:
-        A pandas DataFrame with the grade distribution.
-    """
-    if not teacher_name or not semester_id:
-        return pd.DataFrame()
-
-    pipeline = [
-        # Match documents for the given semester
-        {"$match": {"SemesterID": semester_id}},
-        # Unwind arrays to deconstruct them
-        {"$unwind": {"path": "$Teachers", "includeArrayIndex": "teacher_idx"}},
-        {"$unwind": {"path": "$Grades", "includeArrayIndex": "grade_idx"}},
-        # Filter to match the teacher and ensure indices are aligned
-        {"$match": {"$expr": {"$and": [
-            {"$eq": ["$Teachers", teacher_name]},
-            {"$eq": ["$teacher_idx", "$grade_idx"]}
-        ]}}},
-        # Join with students to get Course
-        {"$lookup": {
-            "from": "students",
-            "localField": "StudentID",
-            "foreignField": "_id",
-            "as": "student_info"
-        }},
-        {"$unwind": "$student_info"},
-        # Join with curriculum to get programName
-        {"$lookup": {
-            "from": "curriculum",
-            "localField": "student_info.Course",
-            "foreignField": "programCode",
-            "as": "curriculum_info"
-        }},
-        {"$unwind": {"path": "$curriculum_info", "preserveNullAndEmptyArrays": True}},
-        # Group by program and collect all grades
-        {"$group": {
-            "_id": {
-                "programCode": "$student_info.Course",
-                "programName": {"$ifNull": ["$curriculum_info.programName", "$student_info.Course"]}
-            },
-            "grades": {"$push": "$Grades"}
-        }}
-    ]
-
-    try:
-        data = list(db.grades.aggregate(pipeline))
-    except Exception as e:
-        print(f"An error occurred during aggregation: {e}")
-        return pd.DataFrame()
-
-    if not data:
-        return pd.DataFrame()
-
-    # Process the data with pandas
-    records = []
-    for item in data:
-        program_code = item["_id"]["programCode"]
-        program_name = item["_id"]["programName"]
-        grades = pd.Series(item["grades"])
-        total_grades = len(grades)
-
-        if total_grades == 0:
-            continue
-
-        # Define grade bins
-        bins = {
-            "95-100(%)": ((grades >= 95) & (grades <= 100)).sum(),
-            "90-94(%)": ((grades >= 90) & (grades <= 94)).sum(),
-            "85-89(%)": ((grades >= 85) & (grades <= 89)).sum(),
-            "80-84(%)": ((grades >= 80) & (grades <= 84)).sum(),
-            "75-79(%)": ((grades >= 75) & (grades <= 79)).sum(),
-            "Below 75(%)": (grades < 75).sum()
-        }
-
-        # Calculate percentages and create record
-        record = {
-            "programCode": program_code,
-            "programName": program_name,
-            "Total": total_grades
-        }
-
-        for key, value in bins.items():
-            percentage = (value / total_grades) * 100 if total_grades > 0 else 0
-            record[key] = f"{percentage:.2f}%"
-
-        records.append(record)
-
-    if not records:
-        return pd.DataFrame()
-
-    df = pd.DataFrame(records)
-
-    # Reorder columns to match request
-    column_order = [
-        "programCode", "programName", "95-100(%)", "90-94(%)", "85-89(%)",
-        "80-84(%)", "75-79(%)", "Below 75(%)", "Total"
-    ]
-
-    # Ensure all columns exist
-    for col in column_order:
-        if col not in df:
-            df[col] = 0 if col != 'Total' else '0.00%'
-
-    df = df[column_order]
-
-    return df
 
 
 if __name__ == "__main__":
