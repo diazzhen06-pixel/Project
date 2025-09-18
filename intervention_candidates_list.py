@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 from helpers.utils import generate_excel
+from helpers.pdf_reporter import generate_intervention_candidates_pdf
 
 def get_risk_flag(grade):
     """Determine the risk flag based on the grade."""
@@ -112,4 +113,14 @@ def intervention_candidates_list_panel(db, teacher_name=None):
         data=excel_bytes,
         file_name="intervention_candidates_report.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    # --- Download PDF ---
+    pdf_data = {"dataframe": display_df}
+    pdf_bytes = generate_intervention_candidates_pdf(pdf_data)
+    st.download_button(
+        label="⬇️ Download as PDF",
+        data=pdf_bytes,
+        file_name="intervention_candidates_report.pdf",
+        mime="application/pdf",
     )
