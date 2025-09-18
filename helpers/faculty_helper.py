@@ -22,7 +22,7 @@ except Exception as e:
     sys.exit()
 
 
-def assign_teacher_to_subject(db, student_id: int, semester_id: int, subject_code: str, teacher_name: str) -> bool:
+''' def assign_teacher_to_subject(db, student_id: int, semester_id: int, subject_code: str, teacher_name: str) -> bool:
     """
     Assign a teacher to a specific subject of a student in the grades collection.
     Returns True if the update was successful, False if subject not found.
@@ -38,8 +38,44 @@ def assign_teacher_to_subject(db, student_id: int, semester_id: int, subject_cod
         {"_id": grade_doc["_id"]},
         {"$set": {f"Teachers.{index}": teacher_name}}
     )
-    return True
+    return True '''
+def assign_teacher_to_subject(subject_code: str, teacher_name: str) -> bool:
+    
+    subjects_col: Collection = db["subjects"]
 
+    grades_col: Collection = db["grades"]
+
+    result = subjects_col.update_one(
+
+        {"_id": subject_code},   # subject_code is stored in _id
+
+        {"$set": {"Teacher": teacher_name}}
+
+    )
+
+    grades_col.update_many(
+
+        {
+
+            "SubjectCodes": subject_code,
+
+            "$or": [
+
+                {f"Teachers": {"$exists": False}},
+
+                {f"Teachers": None},
+
+                {f"Teachers": ""},
+
+            ]
+
+        },
+
+        {"$set": {"Teachers.$": teacher_name}}  # update matching subject entry
+
+    )
+
+    return result.modified_count > 0
 
 def set_student_grade(db, student_id: int, semester_id: int, subject_code: str, grade: int) -> bool:
     """
