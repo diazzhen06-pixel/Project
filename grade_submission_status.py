@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from faculty import generate_excel
+from helpers.utils import generate_excel
 from helpers.pdf_reporter import generate_grade_submission_status_pdf
 
 def grade_submission_status_panel(db, teacher_name=None):

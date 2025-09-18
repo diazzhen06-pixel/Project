@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from faculty import generate_excel
+from helpers.utils import generate_excel
 from helpers.pdf_reporter import generate_intervention_candidates_pdf
 
 def get_risk_flag(grade):

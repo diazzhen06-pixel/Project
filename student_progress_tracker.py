@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
-from faculty import generate_excel
+from helpers.utils import generate_excel
 from helpers.pdf_reporter import generate_student_progress_pdf
 
 # ----------------- LOAD ENV -----------------
