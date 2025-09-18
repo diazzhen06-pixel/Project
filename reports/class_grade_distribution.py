@@ -4,10 +4,7 @@ import plotly.express as px
 from helpers.utils import generate_excel
 
 def get_grade_distribution_data(db, teacher_name, semester_id):
-    """
-    Fetches grade distribution data for a given teacher and semester.
-    Returns a pandas DataFrame.
-    """
+    """Fetches grade distribution data for a given teacher and semester."""
     if not teacher_name or not semester_id:
         return pd.DataFrame()
 
@@ -40,7 +37,7 @@ def get_grade_distribution_data(db, teacher_name, semester_id):
             },
             "grades": {"$push": "$Grades"}
         }}
-    ])
+    ]
 
     try:
         data = list(db.grades.aggregate(pipeline))
@@ -50,10 +47,7 @@ def get_grade_distribution_data(db, teacher_name, semester_id):
         return pd.DataFrame()
 
 def process_grade_distribution_data(df):
-    """
-    Processes the raw grade distribution data to calculate percentages.
-    Returns a formatted DataFrame.
-    """
+    """Processes the raw grade distribution data to calculate percentages."""
     if df.empty:
         return pd.DataFrame()
 
@@ -61,7 +55,7 @@ def process_grade_distribution_data(df):
     for _, row in df.iterrows():
         program_code = row["_id"]["programCode"]
         program_name = row["_id"]["programName"]
-        grades = pd.Series(row["grades"])
+        grades = pd.to_numeric(pd.Series(row["grades"]), errors="coerce").dropna()
         total_grades = len(grades)
 
         if total_grades == 0:
@@ -97,9 +91,10 @@ def process_grade_distribution_data(df):
         "80-84(%)", "75-79(%)", "Below 75(%)", "Total"
     ]
 
+    # Ensure all expected columns exist
     for col in column_order:
         if col not in df_processed:
-            df_processed[col] = 0 if col != 'Total' else '0.00%'
+            df_processed[col] = "0.00%" if col != "Total" else 0
 
     return df_processed[column_order]
 
@@ -107,17 +102,22 @@ def display_grade_distribution_histograms(df_raw, db):
     """Displays grade distribution histograms for each program."""
     st.markdown("### Grade Distribution Histograms")
 
-    # Explode the grades list to have one grade per row
-    df_grades = df_raw.explode('grades').rename(columns={'grades': 'Grade'})
+    if df_raw.empty:
+        st.warning("No data available for histograms.")
+        return
 
-    # Extract program info
-    df_grades['programCode'] = df_grades['_id'].apply(lambda x: x['programCode'])
-    df_grades['programName'] = df_grades['_id'].apply(lambda x: x['programName'])
+    # Explode the grades list
+    df_grades = df_raw.explode("grades").rename(columns={"grades": "Grade"})
+    df_grades["Grade"] = pd.to_numeric(df_grades["Grade"], errors="coerce").dropna()
 
+    df_grades["programCode"] = df_grades["_id"].apply(lambda x: x["programCode"])
+    df_grades["programName"] = df_grades["_id"].apply(lambda x: x["programName"])
 
-    for program_name, group in df_grades.groupby('programName'):
+    for program_name, group in df_grades.groupby("programName"):
+        if group["Grade"].empty:
+            continue
+
         st.markdown(f"#### {program_name}")
-
         fig = px.histogram(
             group,
             x="Grade",
@@ -140,7 +140,10 @@ def class_grade_distribution_report(db, teacher_name):
     try:
         semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
         semester_order = {"First": 1, "Second": 2, "Summer": 3}
-        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
+        semesters.sort(
+            key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)),
+            reverse=True
+        )
         semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
         semester_ids = [""] + list(semester_options.keys())
     except Exception as e:
