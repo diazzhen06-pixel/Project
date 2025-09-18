@@ -1,11 +1,15 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
+from helpers.utils import generate_excel
 
 def custom_query_builder_panel(db):
     """A panel for building custom queries on student grades."""
     st.header("🔎 Custom Query Builder")
-    st.info("Build filtered queries, e.g., 'Show all students with < 75 in CS101'.")
+    st.info(
+        "This tool allows you to build custom queries to filter student data. "
+        "For example, you can find all students who scored below 75 in a specific subject."
+    )
 
     # --- UI Components ---
     col1, col2, col3 = st.columns(3)
@@ -79,6 +83,15 @@ def run_query(db, program_code, operator, grade):
             "programName": "Program Name",
         })
         st.dataframe(df, use_container_width=True)
+
+        st.markdown("### 💾 Download Report")
+        excel_bytes = generate_excel(df, "custom_query_report.xlsx")
+        st.download_button(
+            label="⬇️ Download as Excel",
+            data=excel_bytes,
+            file_name="custom_query_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
 
     except Exception as e:
         st.error(f"An error occurred while running the query: {e}")
