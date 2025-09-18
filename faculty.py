@@ -315,21 +315,15 @@ def faculty(df, semesters_map, db, role, username):
     st.markdown("---")
 
     # Dropdown for report selection
-    if role == 'faculty':
-        report_options = [
-            "📘 Class Report",
-            "📊 Class Grade Distribution",
-            "📈 Student Progress Tracker",
-            "🔥 Subject Difficulty Heatmap",
-            "🧑‍🏫 Intervention Candidates List",
-            "📝 Grade Submission Status",
-            "🔎 Custom Query Builder"
-        ]
-    else: # teacher
-        report_options = [
-            "📘 Class Report",
-            "📊 Class Grade Distribution",
-        ]
+    report_options = [
+        "📘 Class Report",
+        "📊 Class Grade Distribution",
+        "📈 Student Progress Tracker",
+        "🔥 Subject Difficulty Heatmap",
+        "🧑‍🏫 Intervention Candidates List",
+        "📝 Grade Submission Status",
+        "🔎 Custom Query Builder"
+    ]
 
     selected_report = st.selectbox("Select a Report", report_options)
 
