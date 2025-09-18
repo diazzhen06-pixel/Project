@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from helpers.pdf_reporter import generate_custom_query_pdf
 
 def custom_query_builder_panel(db):
     """A panel for building custom queries on student grades."""
@@ -81,18 +80,6 @@ def run_query(db, program_code, operator, grade):
         })
         st.dataframe(df, use_container_width=True)
 
-        st.markdown("### 💾 Download Report")
-        pdf_data = {
-            "title": f"Custom Query: {program_code} {operator} {grade}",
-            "dataframe": df
-        }
-        pdf_bytes = generate_custom_query_pdf(pdf_data)
-        st.download_button(
-            label="⬇️ Download as PDF",
-            data=pdf_bytes,
-            file_name=f"custom_query_{program_code}.pdf",
-            mime="application/pdf",
-        )
 
     except Exception as e:
         st.error(f"An error occurred while running the query: {e}")

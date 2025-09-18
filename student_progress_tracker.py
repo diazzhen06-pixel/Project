@@ -5,7 +5,6 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 from helpers.utils import generate_excel
-from helpers.pdf_reporter import generate_student_progress_pdf
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -177,25 +176,6 @@ def student_progress_tracker_panel(db, teacher_name=None):
                 )
                 st.plotly_chart(fig)
 
-                # --- Download PDF for this student ---
-                st.markdown("#### 💾 Download Student Report")
-                chart_bytes = fig.to_image(format="png")
-
-                # Create a dataframe for the single student
-                student_df_for_pdf = pivot_df[pivot_df['Name'] == selected_student_name]
-
-                pdf_data = {
-                    "dataframe": student_df_for_pdf,
-                    "chart": chart_bytes,
-                }
-                pdf_bytes = generate_student_progress_pdf(pdf_data)
-                st.download_button(
-                    label="⬇️ Download as PDF",
-                    data=pdf_bytes,
-                    file_name=f"student_progress_{selected_student_name}.pdf",
-                    mime="application/pdf",
-                    key=f"pdf_{selected_student_name}" # Unique key
-                )
             else:
                 st.warning(f"No grade data available for {selected_student_name} to plot.")
     else:
