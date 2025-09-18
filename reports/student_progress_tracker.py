@@ -5,7 +5,6 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 from helpers.utils import generate_excel
-from helpers.data_helper import get_programs
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -32,7 +31,7 @@ def get_trend(grades, high_performance_threshold=90, trend_threshold=5):
 
     return "Stable"
 
-def get_student_progress_data(db, teacher_name=None, subject=None, course=None, year_level=None, program_code=None):
+def get_student_progress_data(db, teacher_name=None, subject=None, course=None, year_level=None):
     """Fetches and processes student progress data."""
     pipeline = []
     match_filter = {}
@@ -57,14 +56,6 @@ def get_student_progress_data(db, teacher_name=None, subject=None, course=None, 
         student_match["student_info.Course"] = course
     if year_level:
         student_match["student_info.YearLevel"] = year_level
-
-    if program_code:
-        programs_df = get_programs(db)
-        program_name = programs_df[programs_df['programCode'] == program_code]['programName'].iloc[0]
-        student_match["$or"] = [
-            {"student_info.Course": program_code},
-            {"student_info.Course": program_name}
-        ]
 
     if student_match:
         pipeline.append({"$match": student_match})
@@ -97,22 +88,17 @@ def get_student_progress_data(db, teacher_name=None, subject=None, course=None, 
 def display_filters(db):
     """Displays filters for the registrar view."""
     st.header("Student Progress Tracker")
-    programs_df = get_programs(db)
-    program_codes = [""] + sorted(programs_df["programCode"].unique())
-
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         subject_list = [""] + sorted(db["subjects"].distinct("_id"))
         selected_subject = st.selectbox("Filter by Subject", subject_list, key="spt_subject")
     with col2:
-        selected_program_code = st.selectbox("Filter by Program Code", program_codes, key="spt_program_code")
-    with col3:
         course_list = [""] + sorted(db["students"].distinct("Course"))
         selected_course = st.selectbox("Filter by Course", course_list, key="spt_course")
-    with col4:
+    with col3:
         year_level_list = [""] + sorted(db["students"].distinct("YearLevel"))
         selected_year_level = st.selectbox("Filter by Year Level", year_level_list, key="spt_year")
-    return selected_subject, selected_course, selected_year_level, selected_program_code
+    return selected_subject, selected_course, selected_year_level
 
 def display_progress_chart(df):
     """Displays the performance chart for a selected student."""
@@ -141,11 +127,11 @@ def display_progress_chart(df):
 
 def student_progress_tracker_panel(db, teacher_name=None):
     """Main function to display the student progress tracker."""
-    selected_subject, selected_course, selected_year_level, selected_program_code = (None, None, None, None)
+    selected_subject, selected_course, selected_year_level = (None, None, None)
     if teacher_name is None:
-        selected_subject, selected_course, selected_year_level, selected_program_code = display_filters(db)
+        selected_subject, selected_course, selected_year_level = display_filters(db)
 
-    df = get_student_progress_data(db, teacher_name, selected_subject, selected_course, selected_year_level, selected_program_code)
+    df = get_student_progress_data(db, teacher_name, selected_subject, selected_course, selected_year_level)
 
     if df.empty:
         st.warning("No data found for the selected filters.")

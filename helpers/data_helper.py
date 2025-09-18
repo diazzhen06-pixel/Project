@@ -159,18 +159,6 @@ def get_courses(db):
     return db.students.distinct("Course")
 
 @cache_meta(ttl=600000) #60 minutes
-def get_programs(db):
-    """
-    Returns a DataFrame with all program codes and names from the curriculum collection.
-    """
-    def query():
-        cursor = db.curriculum.find({}, {"programCode": 1, "programName": 1, "_id": 0})
-        df = pd.DataFrame(list(cursor))
-        return df
-
-    return load_or_query("programs_cache.pkl", query)
-
-@cache_meta(ttl=600000) #60 minutes
 def get_grades(db, student_id: int | None = None, batch_size: int = 1000):
     print("Fetching data", end="")
     # 🔹 Build query filter

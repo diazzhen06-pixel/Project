@@ -2,32 +2,11 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 from helpers.utils import generate_excel
-from helpers.data_helper import get_programs
 
-def get_grade_submission_data(db, teacher_name, semester_id, program_code=None, program_name=None):
+def get_grade_submission_data(db, teacher_name, semester_id):
     """Fetches and processes grade submission data using an aggregation pipeline."""
     pipeline = [
         {"$match": {"Teachers": teacher_name, "SemesterID": semester_id}},
-        {"$lookup": {
-            "from": "students",
-            "localField": "StudentID",
-            "foreignField": "_id",
-            "as": "student_info"
-        }},
-        {"$unwind": "$student_info"},
-    ]
-
-    if program_code:
-        programs_df = get_programs(db)
-        p_name = programs_df[programs_df['programCode'] == program_code]['programName'].iloc[0]
-        pipeline.append({"$match": {"$or": [
-            {"student_info.Course": program_code},
-            {"student_info.Course": p_name}
-        ]}})
-    elif program_name:
-        pipeline.append({"$match": {"student_info.Course": program_name}})
-
-    pipeline.extend([
         {"$unwind": {"path": "$Teachers", "includeArrayIndex": "teacher_idx"}},
         {"$match": {"Teachers": teacher_name}},
         {"$project": {
@@ -48,8 +27,8 @@ def get_grade_submission_data(db, teacher_name, semester_id, program_code=None, 
         }},
         {"$unwind": "$subject_info"},
         {"$project": {
-            "Subject Code": "$_id",
-            "Subject Name": "$subject_info.Description",
+            "programCode": "$_id",
+            "programName": "$subject_info.Description",
             "Submitted Grades": "$SubmittedGrades",
             "Total Students": "$TotalStudents",
             "Submission Rate": {
@@ -59,7 +38,7 @@ def get_grade_submission_data(db, teacher_name, semester_id, program_code=None, 
                 ]
             }
         }}
-    ])
+    ]
 
     try:
         data = list(db.grades.aggregate(pipeline))
@@ -91,41 +70,26 @@ def grade_submission_status_panel(db, teacher_name=None):
         st.warning("Please select a teacher from the main faculty page.")
         return
 
-    programs_df = get_programs(db)
-    program_codes = [""] + sorted(programs_df["programCode"].unique())
-    program_names = [""] + sorted(programs_df["programName"].unique())
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        try:
-            semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
-            semester_order = {"First": 1, "Second": 2, "Summer": 3}
-            semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
-            semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
-            selected_semester_id = st.selectbox(
-                "Select Semester",
-                options=[""] + list(semester_options.keys()),
-                format_func=lambda x: semester_options.get(x, "Select..."),
-                key="submission_status_semester"
-            )
-        except Exception as e:
-            st.error(f"Error fetching semesters: {e}")
-            return
-    with col2:
-        selected_program_code = st.selectbox("Filter by Program Code", program_codes, key="gss_program_code")
-    with col3:
-        if selected_program_code:
-            program_name_options = [""] + sorted(programs_df[programs_df["programCode"] == selected_program_code]["programName"].unique())
-        else:
-            program_name_options = program_names
-        selected_program_name = st.selectbox("Filter by Program Name", program_name_options, key="gss_program_name")
-
+    try:
+        semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
+        semester_order = {"First": 1, "Second": 2, "Summer": 3}
+        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
+        semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
+        selected_semester_id = st.selectbox(
+            "Select Semester",
+            options=[""] + list(semester_options.keys()),
+            format_func=lambda x: semester_options.get(x, "Select..."),
+            key="submission_status_semester"
+        )
+    except Exception as e:
+        st.error(f"Error fetching semesters: {e}")
+        return
 
     if not selected_semester_id:
         st.info("Please select a semester to view the submission status.")
         return
 
-    df_summary = get_grade_submission_data(db, teacher_name, selected_semester_id, selected_program_code, selected_program_name)
+    df_summary = get_grade_submission_data(db, teacher_name, selected_semester_id)
 
     if df_summary.empty:
         st.warning("No classes found for the selected teacher and semester.")

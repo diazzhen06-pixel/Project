@@ -8,7 +8,6 @@ from student import student_panel
 from faculty import faculty
 from newfaculty import new_faculty_panel
 from login import login
-from helpers.data_helper import get_programs
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -110,29 +109,13 @@ if selected_nav == "Registrar" and role == "registrar":
     st.header(" Registrar Dashboard")
 
     # Dropdowns
-    programs_df = get_programs(db)
-    program_codes = [""] + sorted(programs_df["programCode"].unique())
-    program_names = [""] + sorted(programs_df["programName"].unique())
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        selected_program_code = st.selectbox("Select Program Code", program_codes)
-    with col2:
-        if selected_program_code:
-            program_name_options = [""] + sorted(programs_df[programs_df["programCode"] == selected_program_code]["programName"].unique())
-        else:
-            program_name_options = program_names
-        selected_program_name = st.selectbox("Select Program Name", program_name_options)
-
     semester_list = sorted(df_merged["SemesterID"].dropna().unique())
     subject_set = set()
     df_merged["SubjectCodes"].dropna().apply(lambda x: subject_set.update(x if isinstance(x, list) else []))
     subject_list = sorted(subject_set)
 
-    with col3:
-        selected_semester = st.selectbox("Select Semester", [""] + list(semester_list))
-    with col4:
-        selected_subject = st.selectbox("Select Subject Code", [""] + subject_list)
+    selected_semester = st.selectbox("Select Semester", [""] + list(semester_list))
+    selected_subject = st.selectbox("Select Subject Code", [""] + subject_list)
 
     # ----------------- DISPLAY -----------------
     if selected_semester and selected_subject:
@@ -140,18 +123,6 @@ if selected_nav == "Registrar" and role == "registrar":
             (df_merged["SemesterID"] == selected_semester) &
             (df_merged["SubjectCodes"].apply(lambda codes: selected_subject in codes if isinstance(codes, list) else False))
         ]
-
-        if selected_program_code:
-            # Get the program name for the selected code
-            program_name_for_code = programs_df[programs_df['programCode'] == selected_program_code]['programName'].iloc[0]
-            # It's possible that the 'Course' column in df_merged stores either program code or name.
-            # So, we check for both.
-            filtered = filtered[
-                (filtered["Course"] == selected_program_code) | (filtered["Course"] == program_name_for_code)
-            ]
-
-        if selected_program_name:
-            filtered = filtered[filtered["Course"] == selected_program_name]
 
         if filtered.empty:
             st.warning("❌ No records found for the selected semester and subject.")
