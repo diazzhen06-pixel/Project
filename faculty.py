@@ -289,7 +289,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
 
 # ---------- ENTRY POINT ----------
-def faculty(df, semesters_map, db):
+def faculty(df, semesters_map, db, role, username):
     if db is None:
         st.warning("⚠️ Database connection not available.")
         return
@@ -298,12 +298,16 @@ def faculty(df, semesters_map, db):
     subjects_cursor = db["subjects"].find({}, {"_id": 1, "Description": 1, "Units": 1, "Teacher": 1})
     subjects_map = {doc["_id"]: doc for doc in subjects_cursor}
 
-    teacher_list = sorted({subj.get("Teacher") for subj in subjects_map.values() if subj.get("Teacher")})
-    if not teacher_list:
-        st.warning("⚠️ No teachers found in subjects mapping.")
-        return
+    selected_teacher_name = None
+    if role == 'faculty':
+        teacher_list = sorted({subj.get("Teacher") for subj in subjects_map.values() if subj.get("Teacher")})
+        if not teacher_list:
+            st.warning("⚠️ No teachers found in subjects mapping.")
+            return
+        selected_teacher_name = st.selectbox("Select Teacher", [""] + teacher_list, key="faculty_teacher")
+    elif role == 'teacher':
+        selected_teacher_name = username
 
-    selected_teacher_name = st.selectbox("Select Teacher", [""] + teacher_list, key="faculty_teacher")
     if not selected_teacher_name:
         st.info("Please select a teacher to continue.")
         return
@@ -311,15 +315,22 @@ def faculty(df, semesters_map, db):
     st.markdown("---")
 
     # Dropdown for report selection
-    report_options = [
-        "📘 Class Report",
-        "📊 Class Grade Distribution",
-        "📈 Student Progress Tracker",
-        "🔥 Subject Difficulty Heatmap",
-        "🧑‍🏫 Intervention Candidates List",
-        "📝 Grade Submission Status",
-        "🔎 Custom Query Builder"
-    ]
+    if role == 'faculty':
+        report_options = [
+            "📘 Class Report",
+            "📊 Class Grade Distribution",
+            "📈 Student Progress Tracker",
+            "🔥 Subject Difficulty Heatmap",
+            "🧑‍🏫 Intervention Candidates List",
+            "📝 Grade Submission Status",
+            "🔎 Custom Query Builder"
+        ]
+    else: # teacher
+        report_options = [
+            "📘 Class Report",
+            "📊 Class Grade Distribution",
+        ]
+
     selected_report = st.selectbox("Select a Report", report_options)
 
     # Render the selected report

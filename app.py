@@ -91,11 +91,21 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 # Navigation bar
-nav_options = ["Registrar", "Faculty", "Faculty Tasks", "Student"]
-selected_nav = st.sidebar.radio("Navigation", nav_options)
+role = st.session_state.get('role')
+nav_options = []
+if role == 'registrar':
+    nav_options = ["Registrar"]
+elif role == 'faculty':
+    nav_options = ["Faculty", "Faculty Tasks"]
+elif role == 'teacher':
+    nav_options = ["Faculty"]
+elif role == 'student':
+    nav_options = ["Student"]
+
+selected_nav = st.sidebar.radio("Navigation", nav_options) if nav_options else None
 
 # ----------------- REGISTRAR SECTION -----------------
-if selected_nav == "Registrar" and st.session_state['role'] == "registrar":
+if selected_nav == "Registrar" and role == "registrar":
     st.header(" Registrar Dashboard")
 
     # Dropdowns
@@ -235,15 +245,15 @@ if selected_nav == "Registrar" and st.session_state['role'] == "registrar":
             st.plotly_chart(fig, use_container_width=True)
 
 # ----------------- FACULTY SECTION -----------------
-elif selected_nav == "Faculty" and st.session_state['role'] == "faculty":
-    faculty(df_merged, semesters_map, db)
+elif selected_nav == "Faculty" and (role == "faculty" or role == "teacher"):
+    faculty(df_merged, semesters_map, db, role=st.session_state['role'], username=st.session_state['username'])
 
 # ----------------- FACULTY TASKS SECTION -----------------
-elif selected_nav == "Faculty Tasks" and st.session_state['role'] == "faculty":
+elif selected_nav == "Faculty Tasks" and role == "faculty":
     new_faculty_panel(db)
 
 # ----------------- STUDENT SECTION -----------------
-elif selected_nav == "Student" and st.session_state['role'] == "student":
+elif selected_nav == "Student" and role == "student":
     student_panel()
-else:
+elif selected_nav:
     st.warning("You do not have access to this page.")
