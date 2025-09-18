@@ -39,7 +39,7 @@ class PDF(FPDF):
 
         # Data
         self.set_font('Arial', '', 10)
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             for i, col in enumerate(df.columns):
                 self.cell(col_widths[i], 10, str(row[col]), 1, 0, 'L')
             self.ln()
@@ -61,73 +61,46 @@ def generate_faculty_report_pdf(data):
     # Table
     pdf.add_table(data['dataframe'])
 
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
 
 
 def generate_grade_submission_status_pdf(data):
     pdf = PDF()
     pdf.add_page()
-
-    # Title
     pdf.chapter_title("Grade Submission Status")
-
-    # Table
     pdf.add_table(data['dataframe'])
-
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
 
 
 def generate_intervention_candidates_pdf(data):
     pdf = PDF()
     pdf.add_page()
-
-    # Title
     pdf.chapter_title("Intervention Candidates List")
-
-    # Table
     pdf.add_table(data['dataframe'])
-
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
 
 
 def generate_subject_difficulty_pdf(data):
     pdf = PDF()
     pdf.add_page()
-
-    # Title
     pdf.chapter_title("Subject Difficulty Heatmap")
-
-    # Table
     pdf.add_table(data['dataframe'])
-
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
 
 
 def generate_student_progress_pdf(data):
     pdf = PDF()
     pdf.add_page()
-
-    # Title
     pdf.chapter_title("Student Progress Tracker")
-
-    # Table
     pdf.add_table(data['dataframe'])
-
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
 
 
 def generate_grade_distribution_pdf(data):
     pdf = PDF()
     pdf.add_page()
-
-    # Title
     pdf.chapter_title("Class Grade Distribution Report")
-
-    # Metadata
     pdf.chapter_body(f"Teacher: {data['teacher_name']}")
     pdf.chapter_body(f"Semester ID: {data['semester_id']}")
-
-    # Table
     pdf.add_table(data['dataframe'])
-
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S')   # ✅ fixed
