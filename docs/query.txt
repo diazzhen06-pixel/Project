@@ -1,0 +1,6 @@
+4.	Intervention Candidates List
+-	Lists students at academic risk based on current semester data (e.g. low grades, missing grades)
+Faculty Name:   
+
+sample table [Student ID, Student Name, programCode, programName, Current Grade, Risk Flag]
+sample value of the table [S010, Bob Smith, MATH201, Calculus II, 55, At Risk(<60) / Missing Grade]

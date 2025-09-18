@@ -1,0 +1,17 @@
+AttributeError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
+Traceback:
+File "/mount/src/final-project/app.py", line 249, in <module>
+    faculty(df_merged, semesters_map, db, role=st.session_state['role'], username=st.session_state['username'])
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/mount/src/final-project/faculty.py", line 345, in faculty
+    faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/mount/src/final-project/faculty.py", line 284, in faculty_dashboard
+    pdf_bytes = generate_faculty_report_pdf(
+        data={
+    ...<6 lines>...
+        }
+    )
+File "/mount/src/final-project/helpers/pdf_reporter.py", line 64, in generate_faculty_report_pdf
+    return pdf.output(dest='S').encode('latin-1')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
