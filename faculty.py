@@ -126,7 +126,7 @@ def class_grade_distribution_report(db, teacher_name):
         st.plotly_chart(fig, use_container_width=True)
 
         chart_bytes = fig.to_image(format="png")
-        charts_for_pdf.append(chart_bytes)
+        charts_for_pdf.append({"bytes": chart_bytes, "format": "png"})
 
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Report")
@@ -251,7 +251,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
         hist_img_bytes = BytesIO()
         fig_hist.savefig(hist_img_bytes, format="png")
         hist_img_bytes.seek(0)
-        charts_for_pdf.append(hist_img_bytes.getvalue())
+        charts_for_pdf.append({"bytes": hist_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_hist)
 
         # Pass vs Fail
@@ -267,7 +267,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
         pf_img_bytes = BytesIO()
         fig_pf.savefig(pf_img_bytes, format="png")
         pf_img_bytes.seek(0)
-        charts_for_pdf.append(pf_img_bytes.getvalue())
+        charts_for_pdf.append({"bytes": pf_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_pf)
 
         st.markdown("---")

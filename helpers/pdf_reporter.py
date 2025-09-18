@@ -26,8 +26,8 @@ class PDF(FPDF):
         self.multi_cell(0, 10, body)
         self.ln()
 
-    def add_image_from_bytes(self, image_bytes, w=0):
-        self.image(BytesIO(image_bytes), w=w, type='PNG')
+    def add_image_from_bytes(self, image_bytes, w=0, image_format="png"):
+        self.image(BytesIO(image_bytes), w=w, type=image_format)
 
     def add_table(self, df: pd.DataFrame):
         self.set_font('Arial', 'B', 10)
@@ -80,8 +80,10 @@ def generate_faculty_report_pdf(data):
     if 'charts' in data and data['charts']:
         pdf.add_page()
         pdf.chapter_title("Charts")
-        for chart_bytes in data['charts']:
-            pdf.add_image_from_bytes(chart_bytes, w=190)
+        for chart_info in data['charts']:
+            pdf.add_image_from_bytes(
+                chart_info['bytes'], w=190, image_format=chart_info.get('format', 'png')
+            )
             pdf.ln(5)
     return _pdf_bytes(pdf)
 
@@ -118,7 +120,10 @@ def generate_student_progress_pdf(data):
     if data.get('chart'):
         pdf.add_page()
         pdf.chapter_title("Performance Chart")
-        pdf.add_image_from_bytes(data['chart'], w=190)
+        chart_info = data['chart']
+        pdf.add_image_from_bytes(
+            chart_info['bytes'], w=190, image_format=chart_info.get('format', 'png')
+        )
     return _pdf_bytes(pdf)
 
 
@@ -132,8 +137,10 @@ def generate_grade_distribution_pdf(data):
     if 'charts' in data and data['charts']:
         pdf.add_page()
         pdf.chapter_title("Grade Distribution Histograms")
-        for chart_bytes in data['charts']:
-            pdf.add_image_from_bytes(chart_bytes, w=190)
+        for chart_info in data['charts']:
+            pdf.add_image_from_bytes(
+                chart_info['bytes'], w=190, image_format=chart_info.get('format', 'png')
+            )
             pdf.ln(5)
     return _pdf_bytes(pdf)
 
