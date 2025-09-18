@@ -12,7 +12,6 @@ from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
 from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
-from helpers.pdf_reporter import generate_faculty_report_pdf, generate_grade_distribution_pdf
 from helpers.utils import generate_excel
 
 
@@ -75,31 +74,14 @@ def class_grade_distribution_report(db, teacher_name):
 
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Report")
-    col_download_excel, col_download_pdf = st.columns(2)
 
-    with col_download_excel:
-        excel_bytes = generate_excel(df_dist, "grade_distribution_report.xlsx")
-        st.download_button(
-            label="⬇️ Download as Excel",
-            data=excel_bytes,
-            file_name=f"GradeDistribution_{teacher_name}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-
-    with col_download_pdf:
-        pdf_bytes = generate_grade_distribution_pdf(
-            data={
-                "dataframe": df_dist,
-                "teacher_name": teacher_name,
-                "semester_id": selected_semester_id,
-            }
-        )
-        st.download_button(
-            label="⬇️ Download as PDF",
-            data=pdf_bytes,
-            file_name=f"GradeDistribution_{teacher_name}.pdf",
-            mime="application/pdf",
-        )
+    excel_bytes = generate_excel(df_dist, "grade_distribution_report.xlsx")
+    st.download_button(
+        label="⬇️ Download as Excel",
+        data=excel_bytes,
+        file_name=f"GradeDistribution_{teacher_name}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
     st.markdown("### Grade Distribution Histograms")
 
@@ -257,46 +239,14 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Class Report")
-    col_download_excel, col_download_pdf = st.columns(2)
 
-    with col_download_excel:
-        excel_bytes = generate_excel(df_subject_grades, "faculty_class_report.xlsx")
-        st.download_button(
-            label="⬇️ Download as Excel",
-            data=excel_bytes,
-            file_name=f"FacultyReport_{selected_subject_code}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-
-    with col_download_pdf:
-        # Get one semester ID to fetch SchoolYear
-        semester_id = None
-        non_null_semesters = df_subject_grades["SemesterID"].dropna()
-        if not non_null_semesters.empty:
-            semester_id = non_null_semesters.iloc[0]
-
-        semester_info = semesters_map.get(semester_id, "N/A")
-        semester_name = semester_info
-        school_year = semester_info
-
-        subject_description = get_subject_description(selected_subject_code, db)
-
-        pdf_bytes = generate_faculty_report_pdf(
-            data={
-                "dataframe": df_subject_grades,
-                "semester_info": semester_name,
-                "subject_description": subject_description,
-                "teachers_str": selected_teacher_name,
-                "subject_code": selected_subject_code,
-                "avg_gpa": avg_gpa,
-            }
-        )
-        st.download_button(
-            label="⬇️ Download as PDF",
-            data=pdf_bytes,
-            file_name=f"FacultyReport_{selected_subject_code}.pdf",
-            mime="application/pdf",
-        )
+    excel_bytes = generate_excel(df_subject_grades, "faculty_class_report.xlsx")
+    st.download_button(
+        label="⬇️ Download as Excel",
+        data=excel_bytes,
+        file_name=f"FacultyReport_{selected_subject_code}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 # ---------- ENTRY POINT ----------
