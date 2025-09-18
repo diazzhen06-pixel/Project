@@ -5,11 +5,6 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import plotly.express as px
 
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-import tempfile
 
 
 
@@ -229,74 +224,6 @@ def student_panel():
         fig = px.line(df_gpa, x="Term", y="GPA", title="📈 GPA per Semester", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
-        # ----------------- PDF Download -----------------
-        def generate_pdf():
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
-                doc = SimpleDocTemplate(tmpfile.name, pagesize=letter)
-                elements = []
-                styles = getSampleStyleSheet()
-
-                # --- Header ---
-                elements.append(Paragraph("Academic Record", styles["Title"]))
-                elements.append(Spacer(1, 12))
-                elements.append(Paragraph(f"Name: {student_info['Name']}", styles["Normal"]))
-                elements.append(Paragraph(f"Course: {student_info['Course']}", styles["Normal"]))
-                elements.append(Paragraph(f"Year Level: {student_info['YearLevel']}", styles["Normal"]))
-                elements.append(Spacer(1, 20))
-
-                # --- Academic Records by Semester ---
-                for (sy, sem), group in df_academic.groupby(["SchoolYear", "Semester"], sort=False):
-                    elements.append(Paragraph(f"🏫 {sy} - {sem}", styles["Heading2"]))
-                    elements.append(Spacer(1, 6))
-
-                    # Table data
-                    table_data = [["SubjectCode", "Description", "Units", "FinalGrade", "Instructor"]]
-                    for _, row in group.iterrows():
-                        table_data.append([
-                            row["SubjectCode"],
-                            row["Description"],
-                            str(row["Units"]),
-                            f"{row['FinalGrade']:.2f}",
-                            row["Instructor"]
-                        ])
-
-                    # Add average row
-                    numeric_grades = pd.to_numeric(group["FinalGrade"], errors="coerce")
-                    avg_grade = numeric_grades.mean() if numeric_grades.notna().any() else 0
-                    table_data.append(["", "AVERAGE", str(group["Units"].sum()), f"{avg_grade:.2f}", ""])
-
-                    # Table styling
-                    table = Table(table_data, repeatRows=1, hAlign="LEFT")
-                    table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
-                        ('BACKGROUND', (0, -1), (-1, -1), colors.whitesmoke),
-                        ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Bold'),
-                        ('TEXTCOLOR', (3, -1), (3, -1), colors.blue),
-                    ]))
-                    elements.append(table)
-                    elements.append(Spacer(1, 12))
-
-                # --- GPA Line Graph ---
-                chart_path = tmpfile.name.replace(".pdf", ".png")
-                fig.write_image(chart_path)
-                elements.append(Paragraph("📈 GPA per Semester", styles["Heading2"]))
-                elements.append(Image(chart_path, width=400, height=250))
-
-                doc.build(elements)
-                return tmpfile.name
-
-        pdf_file = generate_pdf()
-        with open(pdf_file, "rb") as f:
-            st.download_button(
-                "⬇️ Download Academic Record (PDF)",
-                f,
-                file_name=f"academic_record_{selected_id}.pdf",
-                mime="application/pdf"
-            )
 
 
 # ----------------- Run App -----------------
