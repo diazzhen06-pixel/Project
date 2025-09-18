@@ -12,6 +12,7 @@ from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
 from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
+from helpers.pdf_reporter import generate_faculty_report_pdf, generate_grade_distribution_pdf
 
 
 # ---------- HELPERS ----------
@@ -30,9 +31,6 @@ def generate_excel(df, filename):
     return buffer.read()
 
 
-def generate_pdf(data, title, type="class"):
-    """Placeholder for PDF generation (returns bytes)."""
-    return b"%PDF-1.4 Placeholder PDF"
 
 
 def highlight_failed(val):
@@ -86,6 +84,34 @@ def class_grade_distribution_report(db, teacher_name):
 
     st.markdown("### Grade Distribution by Program")
     st.dataframe(df_dist, use_container_width=True)
+
+    # ---------- DOWNLOAD REPORTS ----------
+    st.markdown("### 💾 Download Report")
+    col_download_excel, col_download_pdf = st.columns(2)
+
+    with col_download_excel:
+        excel_bytes = generate_excel(df_dist, "grade_distribution_report.xlsx")
+        st.download_button(
+            label="⬇️ Download as Excel",
+            data=excel_bytes,
+            file_name=f"GradeDistribution_{teacher_name}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    with col_download_pdf:
+        pdf_bytes = generate_grade_distribution_pdf(
+            data={
+                "dataframe": df_dist,
+                "teacher_name": teacher_name,
+                "semester_id": selected_semester_id,
+            }
+        )
+        st.download_button(
+            label="⬇️ Download as PDF",
+            data=pdf_bytes,
+            file_name=f"GradeDistribution_{teacher_name}.pdf",
+            mime="application/pdf",
+        )
 
     st.markdown("### Grade Distribution Histograms")
 
@@ -267,7 +293,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
         subject_description = get_subject_description(selected_subject_code, db)
 
-        pdf_bytes = generate_pdf(
+        pdf_bytes = generate_faculty_report_pdf(
             data={
                 "dataframe": df_subject_grades,
                 "semester_info": semester_name,
@@ -275,10 +301,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
                 "teachers_str": selected_teacher_name,
                 "subject_code": selected_subject_code,
                 "avg_gpa": avg_gpa,
-                "dashboard_type": "faculty",
-            },
-            title="Faculty Class Report",
-            type="class",
+            }
         )
         st.download_button(
             label="⬇️ Download as PDF",

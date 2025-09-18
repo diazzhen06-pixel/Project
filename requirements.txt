@@ -7,5 +7,4 @@ plotly
 xlsxwriter
 openpyxl
 bcrypt
-openpyxl
-
+fpdf2

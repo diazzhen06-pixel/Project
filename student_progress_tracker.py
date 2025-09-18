@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+from faculty import generate_excel
+from helpers.pdf_reporter import generate_student_progress_pdf
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -129,6 +131,32 @@ def student_progress_tracker_panel(db, teacher_name=None):
 
     # Display table
     st.dataframe(pivot_df[['Student ID', 'Name', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']].fillna('N/A'))
+
+    # ---------- DOWNLOAD REPORTS ----------
+    st.markdown("### 💾 Download Report")
+    col_download_excel, col_download_pdf = st.columns(2)
+
+    with col_download_excel:
+        excel_bytes = generate_excel(pivot_df, "student_progress_report.xlsx")
+        st.download_button(
+            label="⬇️ Download as Excel",
+            data=excel_bytes,
+            file_name="student_progress_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    with col_download_pdf:
+        pdf_bytes = generate_student_progress_pdf(
+            data={
+                "dataframe": pivot_df,
+            }
+        )
+        st.download_button(
+            label="⬇️ Download as PDF",
+            data=pdf_bytes,
+            file_name="student_progress_report.pdf",
+            mime="application/pdf",
+        )
 
     # Chart
     st.subheader("Performance Chart")

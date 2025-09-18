@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
+from faculty import generate_excel
+from helpers.pdf_reporter import generate_grade_submission_status_pdf
 
 def grade_submission_status_panel(db, teacher_name=None):
     """Displays the status of grade submissions by faculty."""
@@ -91,3 +93,29 @@ def grade_submission_status_panel(db, teacher_name=None):
     df_summary['Submission Rate'] = df_summary['Submission Rate'].map('{:.2f}%'.format)
 
     st.dataframe(df_summary.reset_index(drop=True), use_container_width=True)
+
+    # ---------- DOWNLOAD REPORTS ----------
+    st.markdown("### 💾 Download Report")
+    col_download_excel, col_download_pdf = st.columns(2)
+
+    with col_download_excel:
+        excel_bytes = generate_excel(df_summary, "grade_submission_status_report.xlsx")
+        st.download_button(
+            label="⬇️ Download as Excel",
+            data=excel_bytes,
+            file_name="grade_submission_status_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    with col_download_pdf:
+        pdf_bytes = generate_grade_submission_status_pdf(
+            data={
+                "dataframe": df_summary,
+            }
+        )
+        st.download_button(
+            label="⬇️ Download as PDF",
+            data=pdf_bytes,
+            file_name="grade_submission_status_report.pdf",
+            mime="application/pdf",
+        )
