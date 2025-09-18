@@ -4,6 +4,7 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 from helpers.utils import generate_excel
+from helpers.pdf_reporter import generate_subject_difficulty_pdf
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -126,4 +127,14 @@ def subject_difficulty_heatmap_panel(db, teacher_name=None):
         data=excel_bytes,
         file_name="subject_difficulty_report.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    # --- Download PDF ---
+    pdf_data = {"dataframe": display_df}
+    pdf_bytes = generate_subject_difficulty_pdf(pdf_data)
+    st.download_button(
+        label="⬇️ Download as PDF",
+        data=pdf_bytes,
+        file_name="subject_difficulty_report.pdf",
+        mime="application/pdf",
     )

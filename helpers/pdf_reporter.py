@@ -1,5 +1,6 @@
 from fpdf import FPDF
 import pandas as pd
+from io import BytesIO
 # ---------------------------
 # PDF Report Class
 
@@ -24,6 +25,9 @@ class PDF(FPDF):
         self.set_font('Arial', '', 12)
         self.multi_cell(0, 10, body)
         self.ln()
+
+    def add_image_from_bytes(self, image_bytes, w=0):
+        self.image(BytesIO(image_bytes), w=w)
 
     def add_table(self, df: pd.DataFrame):
         self.set_font('Arial', 'B', 10)
@@ -73,6 +77,12 @@ def generate_faculty_report_pdf(data):
     pdf.chapter_body(f"Semester: {data['semester_info']}")
     pdf.chapter_body(f"Average GPA: {data['avg_gpa']:.2f}")
     pdf.add_table(data['dataframe'])
+    if 'charts' in data and data['charts']:
+        pdf.add_page()
+        pdf.chapter_title("Charts")
+        for chart_bytes in data['charts']:
+            pdf.add_image_from_bytes(chart_bytes, w=190)
+            pdf.ln(5)
     return _pdf_bytes(pdf)
 
 
@@ -105,6 +115,10 @@ def generate_student_progress_pdf(data):
     pdf.add_page()
     pdf.chapter_title("Student Progress Tracker")
     pdf.add_table(data['dataframe'])
+    if data.get('chart'):
+        pdf.add_page()
+        pdf.chapter_title("Performance Chart")
+        pdf.add_image_from_bytes(data['chart'], w=190)
     return _pdf_bytes(pdf)
 
 
@@ -114,5 +128,19 @@ def generate_grade_distribution_pdf(data):
     pdf.chapter_title("Class Grade Distribution Report")
     pdf.chapter_body(f"Teacher: {data['teacher_name']}")
     pdf.chapter_body(f"Semester ID: {data['semester_id']}")
+    pdf.add_table(data['dataframe'])
+    if 'charts' in data and data['charts']:
+        pdf.add_page()
+        pdf.chapter_title("Grade Distribution Histograms")
+        for chart_bytes in data['charts']:
+            pdf.add_image_from_bytes(chart_bytes, w=190)
+            pdf.ln(5)
+    return _pdf_bytes(pdf)
+
+
+def generate_custom_query_pdf(data):
+    pdf = PDF()
+    pdf.add_page()
+    pdf.chapter_title(data.get('title', "Custom Query Report"))
     pdf.add_table(data['dataframe'])
     return _pdf_bytes(pdf)
