@@ -3,8 +3,8 @@ __pycache__/
 *.pyc
 
 # # Ignore env files
-# .env
+.env
 
 # # Ignore virtual environments
-# venv/
-# .env/
+ venv/
+ .env/
