@@ -26,7 +26,7 @@ def get_difficulty_level(fail_rate, dropout_rate):
     else:
         return "Low"
 
-def subject_difficulty_heatmap_panel(db, teacher_name=None, subject_code=None):
+def subject_difficulty_heatmap_panel(db, teacher_name=None):
     if teacher_name is None:
         st.header("Subject Difficulty Heatmap")
 
@@ -95,9 +95,6 @@ def subject_difficulty_heatmap_panel(db, teacher_name=None, subject_code=None):
 
     display_df = pd.DataFrame(subject_stats)
 
-    if subject_code:
-        display_df = display_df[display_df['programCode'] == subject_code]
-
     # Styling for heatmap effect
     def style_rates(val):
         color = 'rgba(255, 0, 0, {})'.format(val / 100.0) # Red scale based on percentage
@@ -130,4 +127,3 @@ def subject_difficulty_heatmap_panel(db, teacher_name=None, subject_code=None):
         file_name="subject_difficulty_report.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-

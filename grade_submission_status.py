@@ -5,7 +5,6 @@ from helpers.utils import generate_excel
 
 def grade_submission_status_panel(db, teacher_name=None, subject_code=None):
     """Displays the status of grade submissions by faculty."""
-    st.header("📝 Grade Submission Status")
     st.info("This report tracks the status of grade submissions for each class taught by the selected faculty member for a given semester.")
 
     if teacher_name is None:

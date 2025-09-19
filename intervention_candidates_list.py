@@ -17,7 +17,6 @@ def get_risk_flag(grade):
 
 def intervention_candidates_list_panel(db, teacher_name=None, subject_code=None):
     """Displays a list of students at academic risk."""
-    st.header("🧑‍🏫 Intervention Candidates List")
     st.info("This report lists students at academic risk based on low or missing grades for the selected semester.")
 
     if teacher_name is None:
