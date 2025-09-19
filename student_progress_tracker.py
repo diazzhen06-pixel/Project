@@ -10,7 +10,7 @@ def get_trend(grades):
         return "N/A"
 
     # Check for high stable performance
-    if all(g >= 3.5 for g in grades if pd.notna(g)):
+    if all(g >= 75 for g in grades if pd.notna(g)):
         return "Stable High"
 
     # Check for improvement
@@ -23,7 +23,18 @@ def get_trend(grades):
 
     return "Stable"
 
-def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None):
+def get_grade_for_subject(row, subject_code):
+    """Extracts the grade for a specific subject from a row."""
+    try:
+        # Find the index of the subject code
+        idx = row['SubjectCodes'].index(subject_code)
+        # Return the grade at the same index
+        return row['Grades'][idx]
+    except (ValueError, IndexError, TypeError):
+        # Handle cases where subject_code is not found or lists are malformed
+        return None
+
+def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None, course=None, year_level=None):
     st.header("Student Progress Tracker")
 
     # Filter by teacher if provided
@@ -32,6 +43,14 @@ def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None)
         df_full = df_full[df_full['Teachers'].apply(
             lambda lst: teacher_name_clean in [t.strip().lower() for t in lst] if isinstance(lst, list) else False
         )]
+
+    # Filter by course if provided
+    if course:
+        df_full = df_full[df_full['Course'] == course]
+
+    # Filter by year level if provided
+    if year_level:
+        df_full = df_full[df_full['YearLevel'] == year_level]
 
     # Filter the full dataframe for the selected subject
     df_subject = df_full[df_full['SubjectCodes'].apply(lambda x: subject_code in x if isinstance(x, list) else False)].copy()
@@ -43,7 +62,7 @@ def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None)
     # rest of your code remains the same...
 
 
-    df_subject['Grade'] = df_subject.apply(get_grade_for_subject, axis=1)
+    df_subject['Grade'] = df_subject.apply(lambda row: get_grade_for_subject(row, subject_code), axis=1)
 
     # We need to get the semester for each grade.
     # We can join with the semesters table, but the semester is already in the df_full from app.py
@@ -58,7 +77,7 @@ def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None)
         return
 
     # Pivot table to get semesters as columns
-    pivot_df = df_subject.pivot_table(index=['StudentID', 'Name'], columns='Semester', values='Grade').reset_index()
+    pivot_df = df_subject.pivot_table(index=['StudentID', 'Name', 'Course', 'YearLevel'], columns='Semester', values='Grade').reset_index()
 
     # Standardize semester column names
     rename_map = {
@@ -85,7 +104,7 @@ def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None)
     pivot_df['Overall Trend'] = trends
 
     # Display table
-    st.dataframe(pivot_df[['Student ID', 'Name', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']].fillna('N/A'))
+    st.dataframe(pivot_df[['Student ID', 'Name', 'Course', 'YearLevel', 'FirstSem', 'SecondSem', 'Summer', 'Overall Trend']].fillna('N/A'))
 
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Report")
