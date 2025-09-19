@@ -63,6 +63,26 @@ def show_class_report(df, db, selected_subject_code, selected_teacher_name, subj
 
     st.dataframe(df_subject_grades.style.applymap(highlight_failed, subset=["Remarks"]))
 
+    # --- Pass vs Fail Histogram ---
+
+
+    pass_count = df_subject_grades[df_subject_grades["Remarks"] == "Passed"].shape[0]
+    fail_count = df_subject_grades[df_subject_grades["Remarks"] == "Failed"].shape[0]
+
+    st.markdown("📊 Pass vs Fail")
+    fig_pf, ax_pf = plt.subplots(figsize=(6, 4))
+    bars = ax_pf.bar(["Pass", "Fail"], [pass_count, fail_count], color=["green", "red"])
+    for bar in bars:
+        yval = bar.get_height()
+        ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
+    ax_pf.set_ylabel("Number of Students")
+    ax_pf.set_ylim(0, max(pass_count, fail_count) + 2)
+    st.pyplot(fig_pf)
+    plt.close(fig_pf)
+
+    st.markdown("---")
+
+
 # ---------- REPORT FUNCTIONS ----------
 
 def class_grade_distribution_report(db, teacher_name, subject_code=None):
