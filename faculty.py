@@ -136,9 +136,20 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     st.subheader("👩‍🏫 Faculty Dashboard")
     st.info(f"Welcome, {selected_teacher_name}!")
 
+    # Build DataFrame from subjects_map
     taught_subjects_df = pd.DataFrame(list(subjects_map.values()))
     taught_subjects_df["SubjectCode"] = list(subjects_map.keys())
-    taught_subjects_df = taught_subjects_df[taught_subjects_df["Teacher"] == selected_teacher_name]
+
+    # Normalize teacher names (strip spaces, lowercase for comparison)
+    taught_subjects_df["Teacher"] = (
+        taught_subjects_df["Teacher"].astype(str).str.strip().str.lower()
+    )
+    selected_teacher_name_clean = str(selected_teacher_name).strip().lower()
+
+    # Filter by normalized teacher name
+    taught_subjects_df = taught_subjects_df[
+        taught_subjects_df["Teacher"] == selected_teacher_name_clean
+    ]
 
     if taught_subjects_df.empty:
         st.warning("You are not currently assigned to any subjects.")
@@ -146,10 +157,16 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
     st.markdown("### 📚 Your Subjects")
     selected_subject_code = st.selectbox(
-        "Select a Subject", [""] + sorted(taught_subjects_df["SubjectCode"].unique()), key="faculty_subject"
+        "Select a Subject",
+        [""] + sorted(taught_subjects_df["SubjectCode"].unique()),
+        key="faculty_subject"
     )
+
     if not selected_subject_code:
         return
+
+    # (You can add logic here to display subject-specific info)
+    st.success(f"You selected subject: {selected_subject_code}")
 
     st.markdown(f"#### 📑 Class Report for {selected_subject_code}")
 

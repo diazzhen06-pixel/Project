@@ -39,6 +39,7 @@ except Exception as e:
         {"$set": {f"Teachers.{index}": teacher_name}}
     )
     return True '''
+
 def assign_teacher_to_subject(subject_code: str, teacher_name: str) -> bool:
     
     subjects_col: Collection = db["subjects"]
@@ -298,12 +299,12 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
 
         # Define grade bins
         bins = {
-            "95-100(%)": ((grades >= 95) & (grades <= 100)).sum(),
-            "90-94(%)": ((grades >= 90) & (grades <= 94)).sum(),
-            "85-89(%)": ((grades >= 85) & (grades <= 89)).sum(),
-            "80-84(%)": ((grades >= 80) & (grades <= 84)).sum(),
-            "75-79(%)": ((grades >= 75) & (grades <= 79)).sum(),
-            "Below 75(%)": (grades < 75).sum()
+            "95-100(%)": ((int(grades) >= 95) & (int(grades) <= 100)).sum(),
+            "90-94(%)": ((int(grades) >= 90) & (int(grades) <= 94)).sum(),
+            "85-89(%)": ((int(grades) >= 85) & (int(grades) <= 89)).sum(),
+            "80-84(%)": ((int(grades) >= 80) & (int(grades) <= 84)).sum(),
+            "75-79(%)": ((int(grades) >= 75) & (int(grades) <= 79)).sum(),
+            "Below 75(%)": ((int(grades) < 75)).sum()
         }
 
         # Calculate percentages and create record
