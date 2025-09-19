@@ -7,10 +7,8 @@ plotly
 xlsxwriter
 openpyxl
 bcrypt
-<<<<<<< HEAD
 fpdf2
 reportlab
-=======
 fpdf
 kaleido==0.2.1
->>>>>>> parent of bd5175b (Update requirements.txt)
+
