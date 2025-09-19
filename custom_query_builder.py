@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 
-def custom_query_builder_panel(db):
+def custom_query_builder_panel(db, subject_code=None):
     """A panel for building custom queries on student grades."""
     st.header("🔎 Custom Query Builder")
     st.info("Build filtered queries, e.g., 'Show all students with < 75 in CS101'.")
@@ -10,7 +10,7 @@ def custom_query_builder_panel(db):
     # --- UI Components ---
     col1, col2, col3 = st.columns(3)
     with col1:
-        program_code = st.text_input("Program Code (e.g., IT103)")
+        program_code = st.text_input("Program Code (e.g., IT103)", value=subject_code if subject_code else "")
     with col2:
         operator = st.selectbox("Operator", ["<", ">", "<=", ">=", "="])
     with col3:
