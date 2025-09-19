@@ -259,7 +259,7 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int, s
     if subject_code:
         pipeline.append({"$match": {"SubjectCodes": subject_code}})
 
-    pipeline.extend[
+    pipeline.extend([
         # Join with students to get Course
         {"$lookup": {
             "from": "students",
