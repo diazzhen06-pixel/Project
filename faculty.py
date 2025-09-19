@@ -202,8 +202,40 @@ def faculty(df, semesters_map, db, role, username):
     show_class_report(df, db, selected_subject_code, selected_teacher_name, subjects_map)
     class_grade_distribution_report(db, selected_teacher_name, subject_code=selected_subject_code)
 
+    # Ensure df is a proper DataFrame
+    if not isinstance(df, pd.DataFrame):
+        try:
+            df_full = pd.DataFrame(df)
+        except Exception as e:
+            st.error(f"Failed to convert data to DataFrame: {e}")
+            return
+    else:
+        df_full = df
+
+    # ---------------------------
+    # Filter df for the selected teacher and subject
+    # ---------------------------
+    df_filtered = df_full.copy()
+    df_filtered['SubjectCodes'] = df_filtered['SubjectCodes'].apply(
+        lambda x: x if isinstance(x, list) else [x] if pd.notna(x) else []
+    )
+    df_filtered['Teachers'] = df_filtered['Teachers'].apply(
+        lambda x: x if isinstance(x, list) else [x] if pd.notna(x) else []
+    )
+    df_filtered = df_filtered[df_filtered['SubjectCodes'].apply(lambda x: selected_subject_code in x)]
+    df_filtered = df_filtered[
+        df_filtered['Teachers'].apply(
+            lambda t_list: selected_teacher_name_clean in [t.strip().lower() for t in t_list]
+        )
+    ]
+
+    # ---------- STUDENT PROGRESS PANEL ----------
     st.header("📈 Student Progress Tracker")
-    student_progress_tracker_panel(db, teacher_name=selected_teacher_name, subject_code=selected_subject_code)
+    student_progress_tracker_panel(
+        db=db,
+        subject_code=selected_subject_code,
+        df_full=df_filtered
+    )
 
     st.header("🔥 Subject Difficulty Heatmap")
     subject_difficulty_heatmap_panel(db, teacher_name=selected_teacher_name)  # removed subject_code

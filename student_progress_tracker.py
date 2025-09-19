@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -22,23 +23,25 @@ def get_trend(grades):
 
     return "Stable"
 
-def student_progress_tracker_panel(db, subject_code, df_full):
+def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None):
     st.header("Student Progress Tracker")
+
+    # Filter by teacher if provided
+    if teacher_name:
+        teacher_name_clean = str(teacher_name).strip().lower()
+        df_full = df_full[df_full['Teachers'].apply(
+            lambda lst: teacher_name_clean in [t.strip().lower() for t in lst] if isinstance(lst, list) else False
+        )]
 
     # Filter the full dataframe for the selected subject
     df_subject = df_full[df_full['SubjectCodes'].apply(lambda x: subject_code in x if isinstance(x, list) else False)].copy()
 
     if df_subject.empty:
-        st.warning("No students found for the selected subject.")
+        st.warning("No students found for the selected subject and teacher.")
         return
 
-    # Extract the grade for the specific subject
-    def get_grade_for_subject(row):
-        try:
-            idx = row['SubjectCodes'].index(subject_code)
-            return pd.to_numeric(row['Grades'][idx], errors='coerce')
-        except (ValueError, IndexError):
-            return None
+    # rest of your code remains the same...
+
 
     df_subject['Grade'] = df_subject.apply(get_grade_for_subject, axis=1)
 
