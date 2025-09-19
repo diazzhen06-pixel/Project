@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from io import BytesIO
 
-# Import helper functions and panels
+# Import the helper functions and panels
+# You will need to ensure these files exist and contain the correct functions
 from helpers.faculty_helper import get_grade_distribution_by_faculty
 from student_progress_tracker import student_progress_tracker_panel
 from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
@@ -15,6 +16,9 @@ from helpers.utils import generate_excel
 
 
 # ---------- HELPERS ----------
+
+
+
 
 def highlight_failed(val):
     """Highlight failed grades in red, passed in green."""
@@ -31,21 +35,19 @@ def get_subject_description(subject_code, db=None):
     return f"Description for {subject_code}"
 
 
-# ---------- CLASS GRADE DISTRIBUTION ----------
-
 def class_grade_distribution_report(db, teacher_name):
     st.subheader("📊 Class Grade Distribution Report")
 
     # Get semester list
     try:
         semesters = list(db.semesters.find({}, {"_id": 1, "Semester": 1, "SchoolYear": 1}))
+        # Sort semesters: First by SchoolYear descending, then by a custom semester order
         semester_order = {"First": 1, "Second": 2, "Summer": 3}
-        semesters.sort(
-            key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)),
-            reverse=True,
-        )
+        semesters.sort(key=lambda s: (s.get("SchoolYear", 0), semester_order.get(s.get("Semester"), -1)), reverse=True)
+
         semester_options = {s["_id"]: f"{s['Semester']} - {s['SchoolYear']}" for s in semesters}
         semester_ids = [""] + list(semester_options.keys())
+
     except Exception as e:
         st.error(f"Error fetching semesters: {e}")
         return
@@ -60,7 +62,7 @@ def class_grade_distribution_report(db, teacher_name):
         st.info("Please select a semester to view the report.")
         return
 
-    # Get grade distribution table
+    # Get data for the table
     df_dist = get_grade_distribution_by_faculty(db, teacher_name, selected_semester_id)
 
     if df_dist.empty:
@@ -70,10 +72,20 @@ def class_grade_distribution_report(db, teacher_name):
     st.markdown("### Grade Distribution by Program")
     st.dataframe(df_dist, use_container_width=True)
 
-    # Generate histograms
-    st.markdown("### Grade Distribution Histograms")
-    charts_for_pdf = []
+    # ---------- DOWNLOAD REPORTS ----------
+    st.markdown("### 💾 Download Report")
 
+    excel_bytes = generate_excel(df_dist, "grade_distribution_report.xlsx")
+    st.download_button(
+        label="⬇️ Download as Excel",
+        data=excel_bytes,
+        file_name=f"GradeDistribution_{teacher_name}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    st.markdown("### Grade Distribution Histograms")
+
+    # This part is for fetching raw grades for plotting
     pipeline = [
         {"$match": {"SemesterID": selected_semester_id, "Teachers": teacher_name}},
         {"$unwind": {"path": "$Teachers", "includeArrayIndex": "idx"}},
@@ -82,7 +94,7 @@ def class_grade_distribution_report(db, teacher_name):
         {"$match": {"$expr": {"$eq": ["$idx", "$grade_idx"]}}},
         {"$lookup": {"from": "students", "localField": "StudentID", "foreignField": "_id", "as": "student"}},
         {"$unwind": "$student"},
-        {"$project": {"_id": 0, "Grade": "$Grades", "Course": "$student.Course"}},
+        {"$project": {"_id": 0, "Grade": "$Grades", "Course": "$student.Course"}}
     ]
 
     try:
@@ -96,49 +108,30 @@ def class_grade_distribution_report(db, teacher_name):
 
     df_grades = pd.DataFrame(raw_grades_data)
 
-    # Map curriculum names
-    courses = df_grades["Course"].unique()
-    curriculum_map = {
-        c["programCode"]: c["programName"]
-        for c in db.curriculum.find({"programCode": {"$in": list(courses)}})
-    }
-    df_grades["programName"] = df_grades["Course"].map(curriculum_map).fillna(df_grades["Course"])
+    # Get program names from curriculum
+    courses = df_grades['Course'].unique()
+    curriculum_map = {c['programCode']: c['programName'] for c in db.curriculum.find({"programCode": {"$in": list(courses)}})}
+    df_grades['programName'] = df_grades['Course'].map(curriculum_map).fillna(df_grades['Course'])
 
-    for program_name, group in df_grades.groupby("programName"):
+    for program_name, group in df_grades.groupby('programName'):
         st.markdown(f"#### {program_name}")
 
         fig = px.histogram(
             group,
             x="Grade",
             title=f"Grade Distribution for {program_name}",
-            nbins=20,
-            template="plotly_dark",
+            nbins=20, # Adjust number of bins for better visualization
+            template="plotly_dark"
         )
         fig.update_layout(
             xaxis_title="Grade",
             yaxis_title="Number of Students",
-            bargap=0.1,
+            bargap=0.1
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        chart_bytes = fig.to_image(format="png")
-        charts_for_pdf.append({"bytes": chart_bytes, "format": "png"})
 
-    # ---------- DOWNLOAD REPORTS ----------
-    st.markdown("### 💾 Download Report")
-
-    excel_bytes = generate_excel(df_dist, "grade_distribution_report.xlsx")
-    st.download_button(
-        label="⬇️ Download as Excel",
-        data=excel_bytes,
-        file_name=f"GradeDistribution_{teacher_name}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-
-
-# ---------- FACULTY DASHBOARD (CLASS REPORT) ----------
-
+# ---------- FACULTY DASHBOARD ----------
 def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db=None):
     st.subheader("👩‍🏫 Faculty Dashboard")
     st.info(f"Welcome, {selected_teacher_name}!")
@@ -160,7 +153,6 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
     st.markdown(f"#### 📑 Class Report for {selected_subject_code}")
 
-    # Collect grades
     subject_grades = []
     for _, row in df.iterrows():
         if isinstance(row["SubjectCodes"], list) and selected_subject_code in row["SubjectCodes"]:
@@ -189,7 +181,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     df_subject_grades = df_subject_grades.sort_values(by=["YearLevel", "StudentName"]).reset_index(drop=True)
     df_subject_grades["Remarks"] = df_subject_grades["Grade"].apply(lambda x: "Passed" if x >= 75 else "Failed")
 
-    # Stats
+    # Overall class stats
     avg_gpa = df_subject_grades["Grade"].mean()
     total_students = df_subject_grades.shape[0]
 
@@ -197,10 +189,8 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     col1.metric("Class GPA", f"{avg_gpa:.2f}")
     col2.metric("Total Students", total_students)
 
-    # Charts
-    charts_for_pdf = []
+    # ---------- GROUP BY YEAR ----------
     grouped_by_year = df_subject_grades.groupby("YearLevel")
-
     for year_level, group_df in grouped_by_year:
         st.markdown(f"### 🎓 Year Level {year_level}")
 
@@ -217,7 +207,7 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
         st.markdown(f"📊 Grade Distribution for Year Level {year_level}")
         fig_hist, ax_hist = plt.subplots(figsize=(10, 6))
         bins = range(60, 101, 5)
-        n_hist, bins_hist, _ = ax_hist.hist(group_df["Grade"], bins=bins, edgecolor="black")
+        n_hist, bins_hist, patches_hist = ax_hist.hist(group_df["Grade"], bins=bins, edgecolor="black")
         ax_hist.set_xlabel("Grades")
         ax_hist.set_ylabel("Frequency")
         ax_hist.set_xticks(bins)
@@ -231,10 +221,6 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
                     va="bottom",
                 )
         st.pyplot(fig_hist)
-        hist_img_bytes = BytesIO()
-        fig_hist.savefig(hist_img_bytes, format="png")
-        hist_img_bytes.seek(0)
-        charts_for_pdf.append({"bytes": hist_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_hist)
 
         # Pass vs Fail
@@ -247,10 +233,6 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
             yval = bar.get_height()
             ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
         st.pyplot(fig_pf)
-        pf_img_bytes = BytesIO()
-        fig_pf.savefig(pf_img_bytes, format="png")
-        pf_img_bytes.seek(0)
-        charts_for_pdf.append({"bytes": pf_img_bytes.getvalue(), "format": "png"})
         plt.close(fig_pf)
 
         st.markdown("---")
@@ -267,25 +249,24 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
     )
 
 
-
 # ---------- ENTRY POINT ----------
-
 def faculty(df, semesters_map, db, role, username):
     if db is None:
         st.warning("⚠️ Database connection not available.")
         return
 
+    # Build subjects_map from DB
     subjects_cursor = db["subjects"].find({}, {"_id": 1, "Description": 1, "Units": 1, "Teacher": 1})
     subjects_map = {doc["_id"]: doc for doc in subjects_cursor}
 
     selected_teacher_name = None
-    if role == "faculty":
+    if role == 'faculty':
         teacher_list = sorted({subj.get("Teacher") for subj in subjects_map.values() if subj.get("Teacher")})
         if not teacher_list:
             st.warning("⚠️ No teachers found in subjects mapping.")
             return
         selected_teacher_name = st.selectbox("Select Teacher", [""] + teacher_list, key="faculty_teacher")
-    elif role == "teacher":
+    elif role == 'teacher':
         selected_teacher_name = username
 
     if not selected_teacher_name:
@@ -294,6 +275,7 @@ def faculty(df, semesters_map, db, role, username):
 
     st.markdown("---")
 
+    # Dropdown for report selection
     report_options = [
         "📘 Class Report",
         "📊 Class Grade Distribution",
@@ -301,10 +283,12 @@ def faculty(df, semesters_map, db, role, username):
         "🔥 Subject Difficulty Heatmap",
         "🧑‍🏫 Intervention Candidates List",
         "📝 Grade Submission Status",
-        "🔎 Custom Query Builder",
+        "🔎 Custom Query Builder"
     ]
+
     selected_report = st.selectbox("Select a Report", report_options)
 
+    # Render the selected report
     if selected_report == "📘 Class Report":
         st.header("📘 Class Report")
         st.info("This report provides a detailed view of student performance in a specific subject.")
@@ -316,9 +300,13 @@ def faculty(df, semesters_map, db, role, username):
         class_grade_distribution_report(db, selected_teacher_name)
 
     elif selected_report == "📈 Student Progress Tracker":
+        st.header("📈 Student Progress Tracker")
+        st.info("This report shows the longitudinal performance for individual students.")
         student_progress_tracker_panel(db, teacher_name=selected_teacher_name)
 
     elif selected_report == "🔥 Subject Difficulty Heatmap":
+        st.header("🔥 Subject Difficulty Heatmap")
+        st.info("This report visualizes subjects with high failure or dropouts.")
         subject_difficulty_heatmap_panel(db, teacher_name=selected_teacher_name)
 
     elif selected_report == "🧑‍🏫 Intervention Candidates List":
