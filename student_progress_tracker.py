@@ -1,21 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from pymongo import MongoClient
-import os
-from dotenv import load_dotenv
 from helpers.utils import generate_excel
-
-# ----------------- LOAD ENV -----------------
-load_dotenv()
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASS = os.getenv("MONGO_PASS")
-
-# ----------------- CONNECT TO MONGODB -----------------
-@st.cache_resource
-def get_client():
-    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@cluster0.l7fdbmf.mongodb.net"
-    return MongoClient(uri)
 
 def get_trend(grades):
     """Calculates the trend based on a list of grades."""
@@ -36,72 +22,40 @@ def get_trend(grades):
 
     return "Stable"
 
-def student_progress_tracker_panel(db, teacher_name=None, subject_code=None):
-    if teacher_name is None:
-        st.header("Student Progress Tracker")
-        # Filters for registrar view
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            subject_list = [""] + sorted(db["subjects"].distinct("_id"))
-            selected_subject = st.selectbox("Filter by Subject", subject_list, key="spt_subject")
-        with col2:
-            course_list = [""] + sorted(db["students"].distinct("Course"))
-            selected_course = st.selectbox("Filter by Course", course_list, key="spt_course")
-        with col3:
-            year_level_list = [""] + sorted(db["students"].distinct("YearLevel"))
-            selected_year_level = st.selectbox("Filter by Year Level", year_level_list, key="spt_year")
-    else:
-        selected_subject = subject_code
-        selected_course = None
-        selected_year_level = None
+def student_progress_tracker_panel(db, subject_code, df_full):
+    st.header("Student Progress Tracker")
 
+    # Filter the full dataframe for the selected subject
+    df_subject = df_full[df_full['SubjectCodes'].apply(lambda x: subject_code in x if isinstance(x, list) else False)].copy()
 
-    # Data loading
-    grades_col = db["grades"]
-    pipeline = [
-        {"$lookup": {"from": "students", "localField": "StudentID", "foreignField": "_id", "as": "student_info"}},
-        {"$unwind": "$student_info"},
-        {"$lookup": {"from": "semesters", "localField": "SemesterID", "foreignField": "_id", "as": "semester_info"}},
-        {"$unwind": "$semester_info"},
-        {"$project": {
-            "StudentID": 1,
-            "Name": "$student_info.Name",
-            "Course": "$student_info.Course",
-            "YearLevel": "$student_info.YearLevel",
-            "Semester": "$semester_info.Semester",
-            "SchoolYear": "$semester_info.SchoolYear",
-            "Grades": 1,
-            "SubjectCodes": 1,
-            "Teachers": 1,
-        }}
-    ]
-
-    if teacher_name:
-        pipeline.insert(0, {"$match": {"Teachers": teacher_name}})
-
-    df = pd.DataFrame(list(grades_col.aggregate(pipeline)))
-
-    if df.empty:
-        st.warning("No data found.")
+    if df_subject.empty:
+        st.warning("No students found for the selected subject.")
         return
 
-    # Apply filters
-    if selected_subject:
-        df = df[df['SubjectCodes'].apply(lambda x: selected_subject in x if isinstance(x, list) else False)]
-    if selected_course:
-        df = df[df['Course'] == selected_course]
-    if selected_year_level:
-        df = df[df['YearLevel'] == selected_year_level]
+    # Extract the grade for the specific subject
+    def get_grade_for_subject(row):
+        try:
+            idx = row['SubjectCodes'].index(subject_code)
+            return pd.to_numeric(row['Grades'][idx], errors='coerce')
+        except (ValueError, IndexError):
+            return None
 
-    if df.empty:
-        st.warning("No students found for the selected filters.")
+    df_subject['Grade'] = df_subject.apply(get_grade_for_subject, axis=1)
+
+    # We need to get the semester for each grade.
+    # We can join with the semesters table, but the semester is already in the df_full from app.py
+    # Let's get the semester from the SemesterID
+    semesters_df = pd.DataFrame(list(db.semesters.find({}, {"_id": 1, "Semester": 1})))
+    semesters_df.rename(columns={'_id': 'SemesterID'}, inplace=True)
+    df_subject = pd.merge(df_subject, semesters_df, on='SemesterID', how='left')
+
+
+    if 'Semester' not in df_subject.columns:
+        st.error("Semester information is missing.")
         return
-
-    # Calculate average grade per student per semester
-    df['AvgGrade'] = df['Grades'].apply(lambda x: pd.to_numeric(x, errors='coerce').mean())
 
     # Pivot table to get semesters as columns
-    pivot_df = df.pivot_table(index=['StudentID', 'Name'], columns='Semester', values='AvgGrade').reset_index()
+    pivot_df = df_subject.pivot_table(index=['StudentID', 'Name'], columns='Semester', values='Grade').reset_index()
 
     # Standardize semester column names
     rename_map = {

@@ -4,10 +4,12 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
 from student import student_panel
 from faculty import faculty
 from newfaculty import new_faculty_panel
 from login import login
+from student_progress_tracker import student_progress_tracker_panel
 
 # ----------------- LOAD ENV -----------------
 load_dotenv()
@@ -244,6 +246,26 @@ if selected_nav == "Registrar" and role == "registrar":
             )
 
             st.plotly_chart(fig, use_container_width=True)
+
+            # ----------------- HISTOGRAM -----------------
+            st.markdown("### Grade Distribution Histogram")
+            fig_hist = px.histogram(
+                filtered,
+                x="Grade",
+                title=f"Grade Distribution for {selected_subject}",
+                nbins=20,
+                template="plotly_dark"
+            )
+            fig_hist.update_layout(
+                xaxis_title="Grade",
+                yaxis_title="Number of Students",
+                bargap=0.1
+            )
+            st.plotly_chart(fig_hist, use_container_width=True)
+
+            # ----------------- STUDENT PROGRESS TRACKER -----------------
+            with st.expander("Show Student Progress Tracker"):
+                student_progress_tracker_panel(db, selected_subject, df_merged)
 
 # ----------------- FACULTY SECTION -----------------
 elif selected_nav == "Faculty" and (role == "faculty" or role == "teacher"):
