@@ -63,24 +63,46 @@ def show_class_report(df, db, selected_subject_code, selected_teacher_name, subj
 
     st.dataframe(df_subject_grades.style.applymap(highlight_failed, subset=["Remarks"]))
 
-    # --- Pass vs Fail Histogram ---
+    import matplotlib.pyplot as plt
 
+    # --- Loop per YearLevel ---
+    for year_level, group_df in df_subject_grades.groupby("YearLevel"):
 
-    pass_count = df_subject_grades[df_subject_grades["Remarks"] == "Passed"].shape[0]
-    fail_count = df_subject_grades[df_subject_grades["Remarks"] == "Failed"].shape[0]
+        # Pass vs Fail
+        st.markdown(f"📊 Pass vs Fail for Year Level {year_level}")
+        pass_count = group_df[group_df["Remarks"] == "Passed"].shape[0]
+        fail_count = group_df[group_df["Remarks"] == "Failed"].shape[0]
+        fig_pf, ax_pf = plt.subplots(figsize=(6, 4))
+        bars = ax_pf.bar(["Pass", "Fail"], [pass_count, fail_count], color=["green", "red"])
+        for bar in bars:
+            yval = bar.get_height()
+            ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
+        ax_pf.set_ylabel("Number of Students")
+        ax_pf.set_ylim(0, max(pass_count, fail_count) + 2)
+        st.pyplot(fig_pf)
+        plt.close(fig_pf)
 
-    st.markdown("📊 Pass vs Fail")
-    fig_pf, ax_pf = plt.subplots(figsize=(6, 4))
-    bars = ax_pf.bar(["Pass", "Fail"], [pass_count, fail_count], color=["green", "red"])
-    for bar in bars:
-        yval = bar.get_height()
-        ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
-    ax_pf.set_ylabel("Number of Students")
-    ax_pf.set_ylim(0, max(pass_count, fail_count) + 2)
-    st.pyplot(fig_pf)
-    plt.close(fig_pf)
+        # Grade Distribution Histogram
+        st.markdown(f"📊 Grade Distribution for Year Level {year_level}")
+        fig_hist, ax_hist = plt.subplots(figsize=(10, 6))
+        bins = range(60, 101, 5)
+        n_hist, bins_hist, patches_hist = ax_hist.hist(group_df["Grade"], bins=bins, edgecolor="black")
+        ax_hist.set_xlabel("Grades")
+        ax_hist.set_ylabel("Frequency")
+        ax_hist.set_xticks(bins)
+        for i in range(len(n_hist)):
+            if n_hist[i] > 0:
+                ax_hist.text(
+                    bins_hist[i] + (bins_hist[1] - bins_hist[0]) / 2,
+                    n_hist[i],
+                    int(n_hist[i]),
+                    ha="center",
+                    va="bottom",
+                )
+        st.pyplot(fig_hist)
+        plt.close(fig_hist)
 
-    st.markdown("---")
+        st.markdown("---")
 
 
 # ---------- REPORT FUNCTIONS ----------
