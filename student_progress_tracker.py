@@ -37,23 +37,25 @@ def get_grade_for_subject(row, subject_code):
 def student_progress_tracker_panel(db, subject_code, df_full, teacher_name=None, course=None, year_level=None):
     st.header("Student Progress Tracker")
 
+    df = df_full.copy()
+
     # Filter by teacher if provided
     if teacher_name:
         teacher_name_clean = str(teacher_name).strip().lower()
-        df_full = df_full[df_full['Teachers'].apply(
+        df = df[df['Teachers'].apply(
             lambda lst: teacher_name_clean in [t.strip().lower() for t in lst] if isinstance(lst, list) else False
         )]
 
     # Filter by course if provided
     if course:
-        df_full = df_full[df_full['Course'] == course]
+        df = df[df['Course'] == course]
 
     # Filter by year level if provided
     if year_level:
-        df_full = df_full[df_full['YearLevel'] == year_level]
+        df = df[df['YearLevel'] == year_level]
 
     # Filter the full dataframe for the selected subject
-    df_subject = df_full[df_full['SubjectCodes'].apply(lambda x: subject_code in x if isinstance(x, list) else False)].copy()
+    df_subject = df[df['SubjectCodes'].apply(lambda x: subject_code in x if isinstance(x, list) else False)].copy()
 
     if df_subject.empty:
         st.warning("No students found for the selected subject and teacher.")
