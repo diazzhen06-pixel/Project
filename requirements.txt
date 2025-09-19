@@ -9,6 +9,3 @@ openpyxl
 bcrypt
 fpdf2
 reportlab
-fpdf
-kaleido==0.2.1
-
