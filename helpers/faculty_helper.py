@@ -225,7 +225,7 @@ def get_students_in_subject(db, subject_code: str) -> list:
     return list(db.grades.aggregate(pipeline))
 
 
-def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
+def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int, subject_code: str = None):
     """
     Calculates the grade distribution for a given faculty member and semester, grouped by program.
 
@@ -233,6 +233,7 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
         db: The pymongo database instance.
         teacher_name: The name of the teacher to filter by.
         semester_id: The ID of the semester to filter by.
+        subject_code: The subject code to filter by.
 
     Returns:
         A pandas DataFrame with the grade distribution.
@@ -246,11 +247,19 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
         # Unwind arrays to deconstruct them
         {"$unwind": {"path": "$Teachers", "includeArrayIndex": "teacher_idx"}},
         {"$unwind": {"path": "$Grades", "includeArrayIndex": "grade_idx"}},
+        {"$unwind": {"path": "$SubjectCodes", "includeArrayIndex": "subject_idx"}},
         # Filter to match the teacher and ensure indices are aligned
         {"$match": {"$expr": {"$and": [
             {"$eq": ["$Teachers", teacher_name]},
-            {"$eq": ["$teacher_idx", "$grade_idx"]}
+            {"$eq": ["$teacher_idx", "$grade_idx"]},
+            {"$eq": ["$teacher_idx", "$subject_idx"]}
         ]}}},
+    ]
+
+    if subject_code:
+        pipeline.append({"$match": {"SubjectCodes": subject_code}})
+
+    pipeline.extend([
         # Join with students to get Course
         {"$lookup": {
             "from": "students",

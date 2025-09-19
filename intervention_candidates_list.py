@@ -15,7 +15,7 @@ def get_risk_flag(grade):
         return "Invalid Grade Format"
     return None
 
-def intervention_candidates_list_panel(db, teacher_name=None):
+def intervention_candidates_list_panel(db, teacher_name=None, subject_code=None):
     """Displays a list of students at academic risk."""
     st.header("🧑‍🏫 Intervention Candidates List")
     st.info("This report lists students at academic risk based on low or missing grades for the selected semester.")
@@ -71,6 +71,9 @@ def intervention_candidates_list_panel(db, teacher_name=None):
         return
 
     df_candidates = pd.DataFrame(candidates_data)
+
+    if subject_code:
+        df_candidates = df_candidates[df_candidates['SubjectCode'] == subject_code]
 
     # Add programName from curriculum
     program_codes = df_candidates['programCode'].unique().tolist()

@@ -36,7 +36,7 @@ def get_trend(grades):
 
     return "Stable"
 
-def student_progress_tracker_panel(db, teacher_name=None):
+def student_progress_tracker_panel(db, teacher_name=None, subject_code=None):
     if teacher_name is None:
         st.header("Student Progress Tracker")
         # Filters for registrar view
@@ -51,7 +51,7 @@ def student_progress_tracker_panel(db, teacher_name=None):
             year_level_list = [""] + sorted(db["students"].distinct("YearLevel"))
             selected_year_level = st.selectbox("Filter by Year Level", year_level_list, key="spt_year")
     else:
-        selected_subject = None
+        selected_subject = subject_code
         selected_course = None
         selected_year_level = None
 
@@ -85,14 +85,13 @@ def student_progress_tracker_panel(db, teacher_name=None):
         st.warning("No data found.")
         return
 
-    # Apply filters if not in teacher view
-    if teacher_name is None:
-        if selected_subject:
-            df = df[df['SubjectCodes'].apply(lambda x: selected_subject in x if isinstance(x, list) else False)]
-        if selected_course:
-            df = df[df['Course'] == selected_course]
-        if selected_year_level:
-            df = df[df['YearLevel'] == selected_year_level]
+    # Apply filters
+    if selected_subject:
+        df = df[df['SubjectCodes'].apply(lambda x: selected_subject in x if isinstance(x, list) else False)]
+    if selected_course:
+        df = df[df['Course'] == selected_course]
+    if selected_year_level:
+        df = df[df['YearLevel'] == selected_year_level]
 
     if df.empty:
         st.warning("No students found for the selected filters.")
