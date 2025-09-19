@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 import plotly.express as px
 from io import BytesIO
 
@@ -12,6 +11,11 @@ from intervention_candidates_list import intervention_candidates_list_panel
 from grade_submission_status import grade_submission_status_panel
 from custom_query_builder import custom_query_builder_panel
 from helpers.utils import generate_excel
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+import tempfile
 
 
 # ---------- HELPERS ----------
@@ -137,6 +141,56 @@ def class_grade_distribution_report(db, teacher_name):
 
 
 
+def generate_faculty_report_pdf(df_subject_grades, charts_for_pdf, teacher_name, subject_code):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+        doc = SimpleDocTemplate(tmpfile.name, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # --- Header ---
+        elements.append(Paragraph("Faculty Class Report", styles["Title"]))
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph(f"Teacher: {teacher_name}", styles["Normal"]))
+        elements.append(Paragraph(f"Subject: {subject_code}", styles["Normal"]))
+        elements.append(Spacer(1, 20))
+
+        # --- Academic Records by Year Level ---
+        for year_level, group_df in df_subject_grades.groupby("YearLevel"):
+            elements.append(Paragraph(f"🎓 Year Level {year_level}", styles["Heading2"]))
+            elements.append(Spacer(1, 6))
+
+            # Table data
+            table_data = [["StudentID", "StudentName", "Course", "Grade", "Remarks"]]
+            for _, row in group_df.iterrows():
+                table_data.append([
+                    row["StudentID"],
+                    row["StudentName"],
+                    row["Course"],
+                    f"{row['Grade']:.2f}",
+                    row["Remarks"]
+                ])
+
+            # Table styling
+            table = Table(table_data, repeatRows=1, hAlign="LEFT")
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+
+        # --- Charts ---
+        for chart in charts_for_pdf:
+            img = Image(BytesIO(chart["bytes"]), width=400, height=250)
+            elements.append(img)
+            elements.append(Spacer(1, 12))
+
+        doc.build(elements)
+        return tmpfile.name
+
 # ---------- FACULTY DASHBOARD (CLASS REPORT) ----------
 
 def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db=None):
@@ -215,56 +269,60 @@ def faculty_dashboard(selected_teacher_name, df, subjects_map, semesters_map, db
 
         # Histogram
         st.markdown(f"📊 Grade Distribution for Year Level {year_level}")
-        fig_hist, ax_hist = plt.subplots(figsize=(10, 6))
-        bins = range(60, 101, 5)
-        n_hist, bins_hist, _ = ax_hist.hist(group_df["Grade"], bins=bins, edgecolor="black")
-        ax_hist.set_xlabel("Grades")
-        ax_hist.set_ylabel("Frequency")
-        ax_hist.set_xticks(bins)
-        for i in range(len(n_hist)):
-            if n_hist[i] > 0:
-                ax_hist.text(
-                    bins_hist[i] + (bins_hist[1] - bins_hist[0]) / 2,
-                    n_hist[i],
-                    int(n_hist[i]),
-                    ha="center",
-                    va="bottom",
-                )
-        st.pyplot(fig_hist)
-        hist_img_bytes = BytesIO()
-        fig_hist.savefig(hist_img_bytes, format="png")
-        hist_img_bytes.seek(0)
-        charts_for_pdf.append({"bytes": hist_img_bytes.getvalue(), "format": "png"})
-        plt.close(fig_hist)
+        fig_hist = px.histogram(
+            group_df,
+            x="Grade",
+            nbins=20,
+            title=f"Grade Distribution for Year Level {year_level}",
+            template="plotly_dark"
+        )
+        fig_hist.update_layout(bargap=0.1)
+        st.plotly_chart(fig_hist, use_container_width=True)
+        hist_img_bytes = fig_hist.to_image(format="png")
+        charts_for_pdf.append({"bytes": hist_img_bytes, "format": "png"})
+
 
         # Pass vs Fail
         st.markdown(f"📊 Pass vs Fail for Year Level {year_level}")
-        pass_count = group_df[group_df["Remarks"] == "Passed"].shape[0]
-        fail_count = group_df[group_df["Remarks"] == "Failed"].shape[0]
-        fig_pf, ax_pf = plt.subplots(figsize=(6, 4))
-        bars = ax_pf.bar(["Pass", "Fail"], [pass_count, fail_count], color=["green", "red"])
-        for bar in bars:
-            yval = bar.get_height()
-            ax_pf.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha="center", va="bottom")
-        st.pyplot(fig_pf)
-        pf_img_bytes = BytesIO()
-        fig_pf.savefig(pf_img_bytes, format="png")
-        pf_img_bytes.seek(0)
-        charts_for_pdf.append({"bytes": pf_img_bytes.getvalue(), "format": "png"})
-        plt.close(fig_pf)
+        pass_fail_counts = group_df["Remarks"].value_counts().reset_index()
+        pass_fail_counts.columns = ["Remarks", "Count"]
+
+        fig_pf = px.bar(
+            pass_fail_counts,
+            x="Remarks",
+            y="Count",
+            color="Remarks",
+            color_discrete_map={"Passed": "green", "Failed": "red"},
+            title=f"Pass vs Fail for Year Level {year_level}",
+            template="plotly_dark"
+        )
+        st.plotly_chart(fig_pf, use_container_width=True)
+        pf_img_bytes = fig_pf.to_image(format="png")
+        charts_for_pdf.append({"bytes": pf_img_bytes, "format": "png"})
 
         st.markdown("---")
 
     # ---------- DOWNLOAD REPORTS ----------
     st.markdown("### 💾 Download Class Report")
 
-    excel_bytes = generate_excel(df_subject_grades, "faculty_class_report.xlsx")
-    st.download_button(
-        label="⬇️ Download as Excel",
-        data=excel_bytes,
-        file_name=f"FacultyReport_{selected_subject_code}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        excel_bytes = generate_excel(df_subject_grades, "faculty_class_report.xlsx")
+        st.download_button(
+            label="⬇️ Download as Excel",
+            data=excel_bytes,
+            file_name=f"FacultyReport_{selected_subject_code}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    with col2:
+        pdf_file = generate_faculty_report_pdf(df_subject_grades, charts_for_pdf, selected_teacher_name, selected_subject_code)
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+                "⬇️ Download as PDF",
+                f,
+                file_name=f"FacultyReport_{selected_subject_code}.pdf",
+                mime="application/pdf"
+            )
 
 
 

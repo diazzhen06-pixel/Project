@@ -167,31 +167,24 @@ if selected_nav == "Registrar" and role == "registrar":
             ].nunique()
 
             # Header
-            st.markdown(
-                f"""
-                <div style="
-                    border: 2px solid #4CAF50;
-                    padding: 16px;
-                    border-radius: 10px;
-                    background-color: #000000;
-                    font-family: Arial, sans-serif;
-                    line-height: 1.6;
-                    margin-bottom: 20px;
-                    color: white;
-                ">
-                    <strong>🗓️ Semester:</strong> {selected_semester}<br>
-                    <strong>📚 Subject:</strong> {selected_subject} - {subject_description}<br>
-                    <strong>👥 Total Enrolled:</strong> {total_enrolled}<br>
-                    <strong>📊 Total Students This Semester:</strong> {total_students_sem}<br>
-                    <strong>🎓 School Year:</strong> {school_year_str}<br>
-                    <strong>👩‍🏫 Teacher(s):</strong> {teachers_str}<br>
-                    <strong>📈 General Percentile Average (GPA):</strong> {gpa_value if gpa_value is not None else "N/A"}<br>
-                    <strong>⬆️ Students Above GPA:</strong> {above_count if above_count is not None else "N/A"}<br>
-                    <strong>⬇️ Students Below GPA:</strong> {below_count if below_count is not None else "N/A"}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"### Subject: {selected_subject} - {subject_description}")
+            st.text(f"Teacher(s): {teachers_str}")
+
+            # Metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(label="Semester", value=selected_semester)
+                st.metric(label="Total Enrolled (All Semesters)", value=total_enrolled)
+                st.metric(label="General Percentile Average (GPA)", value=f"{gpa_value:.2f}" if gpa_value is not None else "N/A")
+            with col2:
+                st.metric(label="School Year", value=school_year_str)
+                st.metric(label="Total Students (This Semester)", value=total_students_sem)
+                st.metric(label="Students Above GPA", value=above_count if above_count is not None else "N/A")
+
+            with col3:
+                st.metric(label="Subject Code", value=selected_subject)
+                st.metric(label="Students Below GPA", value=below_count if below_count is not None else "N/A")
+
 
             # Student list
             display_df = filtered[["StudentID", "Name", "Course", "YearLevel", "Grade"]].copy()

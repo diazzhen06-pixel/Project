@@ -107,33 +107,18 @@ def student_panel():
         st.warning("⚠️ No students found with this filter.")
         return
 
-    # --- Display Header Row ---
-    col1, col2, col3, col4, col5 = st.columns([2, 4, 3, 2, 2])
-    with col1:
-        st.markdown("**Student ID**")
-    with col2:
-        st.markdown("**Full Name**")
-    with col3:
-        st.markdown("**Course**")
-    with col4:
-        st.markdown("**Year Level**")
-    with col5:
-        st.markdown("**Action**")
+    selection = st.dataframe(
+        df_students,
+        selection_mode="single-row",
+        on_select="rerun",
+        hide_index=True,
+        use_container_width=True
+    )
 
-    # --- Display Each Student Row ---
-    for _, row in df_students.iterrows():
-        col1, col2, col3, col4, col5 = st.columns([2, 4, 3, 2, 2])
-        with col1:
-            st.write(row["Student ID"])
-        with col2:
-            st.write(row["Full Name"])
-        with col3:
-            st.write(row["Course"])
-        with col4:
-            st.write(row["Year Level"])
-        with col5:
-            if st.button("View Records", key=f"view_{row['Student ID']}"):
-                st.session_state.selected_student_id = row["Student ID"]
+    if selection and selection.selection.rows:
+        selected_student_index = selection.selection.rows[0]
+        selected_student_id = df_students.iloc[selected_student_index]["Student ID"]
+        st.session_state.selected_student_id = selected_student_id
 
     st.markdown("---")
 
