@@ -291,20 +291,26 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
     for item in data:
         program_code = item["_id"]["programCode"]
         program_name = item["_id"]["programName"]
-        grades = pd.Series(item["grades"])
+
+        # Convert grades to numeric (force non-numeric to NaN)
+        grades = pd.to_numeric(pd.Series(item["grades"]), errors="coerce")
+        grades = grades.dropna().astype(int)  # drop NaNs, cast to int
         total_grades = len(grades)
 
         if total_grades == 0:
             continue
 
+        # Debug
+        print("grades:", grades.head(), "dtype:", grades.dtype)
+
         # Define grade bins
         bins = {
-            "95-100(%)": ((int(grades) >= 95) & (int(grades) <= 100)).sum(),
-            "90-94(%)": ((int(grades) >= 90) & (int(grades) <= 94)).sum(),
-            "85-89(%)": ((int(grades) >= 85) & (int(grades) <= 89)).sum(),
-            "80-84(%)": ((int(grades) >= 80) & (int(grades) <= 84)).sum(),
-            "75-79(%)": ((int(grades) >= 75) & (int(grades) <= 79)).sum(),
-            "Below 75(%)": ((int(grades) < 75)).sum()
+            "95-100(%)": ((grades >= 95) & (grades <= 100)).sum(),
+            "90-94(%)": ((grades >= 90) & (grades <= 94)).sum(),
+            "85-89(%)": ((grades >= 85) & (grades <= 89)).sum(),
+            "80-84(%)": ((grades >= 80) & (grades <= 84)).sum(),
+            "75-79(%)": ((grades >= 75) & (grades <= 79)).sum(),
+            "Below 75(%)": (grades < 75).sum()
         }
 
         # Calculate percentages and create record
@@ -319,6 +325,7 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
             record[key] = f"{percentage:.2f}%"
 
         records.append(record)
+
 
     if not records:
         return pd.DataFrame()
@@ -339,6 +346,7 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int):
     df = df[column_order]
 
     return df
+
 
 
 if __name__ == "__main__":
