@@ -357,9 +357,6 @@ def get_grade_distribution_by_faculty(db, teacher_name: str, semester_id: int, s
     return df
 
 
-
-if __name__ == "__main__":
-
     # Assign teacher
     # assign_teacher_to_subject(db, student_id=1, semester_id=6, subject_code="IT405", teacher_name="Prof. Alden Quiñones")
 
@@ -372,5 +369,3 @@ if __name__ == "__main__":
     # # Fetch full record
     # doc = get_student_grades(db, student_id=1, semester_id=6)
     # print(doc["SubjectCodes"], doc["Grades"], doc["Teachers"], doc["Status"])
-            pdf.add_image_from_bytes(chart_bytes, w=180)
-            pdf.ln(10)
