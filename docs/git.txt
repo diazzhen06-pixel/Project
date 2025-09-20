@@ -1,0 +1,8 @@
+git remote -v
+git remote set-url origin https://github.com/diazzhen06-pixel/Project.git
+git fetch origin
+git pull origin main
+git pull
+git branch -vv
+git pull
+git push
