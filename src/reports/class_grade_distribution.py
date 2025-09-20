@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from helpers.utils import generate_excel
+from ..utils.utils import generate_excel
 
 def get_grade_distribution_data(db, teacher_name, semester_id):
     """Fetches grade distribution data for a given teacher and semester."""
@@ -132,7 +132,7 @@ def display_grade_distribution_histograms(df_raw, db):
         )
         st.plotly_chart(fig, use_container_width=True)
 
-def class_grade_distribution_report(db, teacher_name):
+def class_grade_distribution_panel(db, teacher_name):
     """Main function to display the class grade distribution report."""
     st.header("📊 Class Grade Distribution")
     st.info("This report shows the grade distribution across different programs for the selected semester.")

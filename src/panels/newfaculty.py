@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from helpers import faculty_helper
+from ..utils import faculty_helper
 
 def assign_teacher_to_subject_ui(db):
     st.subheader("Assign Teacher to Subject")

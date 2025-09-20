@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from helpers.utils import generate_excel
+from ..utils.utils import generate_excel
 
 def grade_submission_status_panel(db, teacher_name=None, subject_code=None):
     """Displays the status of grade submissions by faculty."""

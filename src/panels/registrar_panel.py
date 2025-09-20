@@ -1,114 +1,14 @@
-import os
-import pandas as pd
-from dotenv import load_dotenv
-from pymongo import MongoClient
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
-from student import student_panel
-from faculty import faculty
-from newfaculty import new_faculty_panel
-from login import login
-from student_progress_tracker import student_progress_tracker_panel
+from ..reports.student_progress_tracker import student_progress_tracker_panel
 
-# ----------------- LOAD ENV -----------------
-load_dotenv()
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASS = os.getenv("MONGO_PASS")
-
-if not MONGO_USER or not MONGO_PASS:
-    st.error("❌ Missing MongoDB credentials in .env file")
-    st.stop()
-
-# ----------------- CONNECT TO MONGODB -----------------
-@st.cache_resource
-def get_client():
-    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@cluster0.l7fdbmf.mongodb.net"
-    return MongoClient(uri)
-
-client = get_client()
-db = client["mit261"]
-
-# ----------------- SESSION STATE -----------------
-if 'logged_in' not in st.session_state:
-    st.session_state['logged_in'] = False
-
-if not st.session_state['logged_in']:
-    login(db)
-    st.stop()
-
-# ----------------- LOAD DATA -----------------
-@st.cache_data
-def load_data():
-    grades_col = db["grades"]
-    pipeline = [
-        {"$lookup": {"from": "students", "localField": "StudentID", "foreignField": "_id", "as": "student_info"}},
-        {"$unwind": {"path": "$student_info", "preserveNullAndEmptyArrays": True}},
-        {"$lookup": {"from": "semesters", "localField": "SemesterID", "foreignField": "_id", "as": "semester_info"}},
-        {"$unwind": {"path": "$semester_info", "preserveNullAndEmptyArrays": True}},
-        {"$project": {
-            "_id": 0,
-            "StudentID": 1,
-            "SemesterID": 1,
-            "SubjectCodes": 1,
-            "Grades": 1,
-            "Teachers": 1,
-            "SchoolYear": 1,
-            "SemesterSchoolYear": "$semester_info.SchoolYear",
-            "Name": "$student_info.Name",
-            "Course": "$student_info.Course",
-            "YearLevel": "$student_info.YearLevel",
-        }},
-    ]
-
-    cursor = grades_col.aggregate(pipeline)
-    df = pd.DataFrame(list(cursor))
-
-    # Ensure necessary fields exist
-    for col in ["SchoolYear", "Grades"]:
-        if col not in df.columns:
-            df[col] = None
-
-    if "SemesterSchoolYear" in df.columns:
-        df["SchoolYear"] = df["SchoolYear"].fillna(df["SemesterSchoolYear"])
-
-    semesters_map = (
-        df[["SemesterID", "SemesterSchoolYear"]]
-        .dropna()
-        .drop_duplicates()
-        .set_index("SemesterID")["SemesterSchoolYear"]
-        .to_dict()
-    )
-    return df, semesters_map
-
-df_merged, semesters_map = load_data()
-
-# ----------------- STREAMLIT UI -----------------
-st.set_page_config(page_title="Student Grades Dashboard", layout="wide")
-st.title("MIT Faculty Portal")
-
-# Logout Button
-if st.sidebar.button("Logout"):
-    st.session_state['logged_in'] = False
-    st.rerun()
-
-# Navigation bar
-role = st.session_state.get('role')
-nav_options = []
-if role == 'registrar':
-    nav_options = ["Registrar"]
-elif role == 'faculty':
-    nav_options = ["Faculty", "Faculty Tasks"]
-elif role == 'teacher':
-    nav_options = ["Faculty"]
-elif role == 'student':
-    nav_options = ["Student"]
-
-selected_nav = st.sidebar.radio("Navigation", nav_options) if nav_options else None
-
-# ----------------- REGISTRAR SECTION -----------------
-if selected_nav == "Registrar" and role == "registrar":
-    st.header(" Registrar Dashboard")
+def registrar_panel(db, df_merged, semesters_map):
+    """
+    Displays the registrar's dashboard, including semester/subject filters,
+    statistics, student lists, and various charts.
+    """
+    st.header("Registrar Dashboard")
 
     # Dropdowns
     semester_list = sorted(df_merged["SemesterID"].dropna().unique())
@@ -266,17 +166,3 @@ if selected_nav == "Registrar" and role == "registrar":
             # ----------------- STUDENT PROGRESS TRACKER -----------------
             with st.expander("Show Student Progress Tracker"):
                 student_progress_tracker_panel(db, selected_subject, df_merged)
-
-# ----------------- FACULTY SECTION -----------------
-elif selected_nav == "Faculty" and (role == "faculty" or role == "teacher"):
-    faculty(df_merged, semesters_map, db, role=st.session_state['role'], username=st.session_state['username'])
-
-# ----------------- FACULTY TASKS SECTION -----------------
-elif selected_nav == "Faculty Tasks" and role == "faculty":
-    new_faculty_panel(db)
-
-# ----------------- STUDENT SECTION -----------------
-elif selected_nav == "Student" and role == "student":
-    student_panel()
-elif selected_nav:
-    st.warning("You do not have access to this page.")
