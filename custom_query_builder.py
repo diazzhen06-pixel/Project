@@ -4,6 +4,7 @@ from pymongo import MongoClient
 
 def custom_query_builder_panel(db, subject_code=None):
     """A panel for building custom queries on student grades."""
+    st.header("🔎 Custom Query Builder")
     st.info("Build filtered queries, e.g., 'Show all students with < 75 in CS101'.")
 
     # --- UI Components ---
