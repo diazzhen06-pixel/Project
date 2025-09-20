@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from helpers.utils import generate_excel
+from ..utils.utils import generate_excel
 
 def get_risk_flag(grade):
     """Determine the risk flag based on the grade."""

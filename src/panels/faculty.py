@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from io import BytesIO
 
-from helpers.faculty_helper import get_grade_distribution_by_faculty
-from student_progress_tracker import student_progress_tracker_panel
-from subject_difficulty_heatmap import subject_difficulty_heatmap_panel
-from intervention_candidates_list import intervention_candidates_list_panel
-from grade_submission_status import grade_submission_status_panel
-from custom_query_builder import custom_query_builder_panel
-from helpers.utils import generate_excel
+from ..utils.faculty_helper import get_grade_distribution_by_faculty
+from ..reports.student_progress_tracker import student_progress_tracker_panel
+from ..reports.subject_difficulty_heatmap import subject_difficulty_heatmap_panel
+from ..reports.intervention_candidates_list import intervention_candidates_list_panel
+from ..reports.grade_submission_status import grade_submission_status_panel
+from ..reports.custom_query_builder import custom_query_builder_panel
+from ..utils.utils import generate_excel
 
 # ---------- HELPERS ----------
 
@@ -191,7 +191,7 @@ def class_grade_distribution_report(db, teacher_name, subject_code=None):
 
 # ---------- ENTRY POINT ----------
 
-def faculty(df, semesters_map, db, role, username):
+def faculty_panel(df, semesters_map, db, role, username):
     st.header("📘 Class Record")
     st.info("This report provides a detailed view of student performance in a specific subject.")
 
@@ -242,7 +242,7 @@ def faculty(df, semesters_map, db, role, username):
 
     # Show all reports
     show_class_report(df, db, selected_subject_code, selected_teacher_name, subjects_map)
-    class_grade_distribution_report(db, selected_teacher_name, subject_code=selected_subject_code)
+    class_grade_distribution_panel(db, selected_teacher_name, subject_code=selected_subject_code)
 
     # Ensure df is a proper DataFrame
     if not isinstance(df, pd.DataFrame):

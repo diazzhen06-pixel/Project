@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from helpers.utils import generate_excel
+from ..utils.utils import generate_excel
 
 def get_trend(grades):
     """Calculates the trend based on a list of grades."""

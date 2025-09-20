@@ -2,19 +2,7 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 import os
-from dotenv import load_dotenv
-from helpers.utils import generate_excel
-
-# ----------------- LOAD ENV -----------------
-load_dotenv()
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASS = os.getenv("MONGO_PASS")
-
-# ----------------- CONNECT TO MONGODB -----------------
-@st.cache_resource
-def get_client():
-    uri = f"mongodb+srv://{MONGO_USER}:{MONGO_PASS}@cluster0.l7fdbmf.mongodb.net"
-    return MongoClient(uri)
+from ..utils.utils import generate_excel
 
 def get_difficulty_level(fail_rate, dropout_rate):
     """Determines the difficulty level based on fail and dropout rates."""

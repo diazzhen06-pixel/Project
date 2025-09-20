@@ -300,15 +300,52 @@ def get_curriculum(db, program_code):
     return load_or_query(cache_key, query)
 
 
-# ===============================
-# TEST RUN
-# ===============================
-if __name__ == "__main__":
+import streamlit as st
 
-    
-    # print( get_students_collection().head(1)) #   b'$2b$12$7gc.TcApIFGSEC3anIVHoufkm5L/vx.t0O5Vj8syaCAn7UOvW6Nyu'
+@st.cache_data
+def load_data(_db):
+    """
+    Loads and merges data from the 'grades', 'students', and 'semesters' collections.
+    The '_db' parameter is prefixed with an underscore to indicate that it's an internal,
+    cached resource managed by Streamlit.
+    """
+    grades_col = _db["grades"]
+    pipeline = [
+        {"$lookup": {"from": "students", "localField": "StudentID", "foreignField": "_id", "as": "student_info"}},
+        {"$unwind": {"path": "$student_info", "preserveNullAndEmptyArrays": True}},
+        {"$lookup": {"from": "semesters", "localField": "SemesterID", "foreignField": "_id", "as": "semester_info"}},
+        {"$unwind": {"path": "$semester_info", "preserveNullAndEmptyArrays": True}},
+        {"$project": {
+            "_id": 0,
+            "StudentID": 1,
+            "SemesterID": 1,
+            "SubjectCodes": 1,
+            "Grades": 1,
+            "Teachers": 1,
+            "SchoolYear": 1,
+            "SemesterSchoolYear": "$semester_info.SchoolYear",
+            "Name": "$student_info.Name",
+            "Course": "$student_info.Course",
+            "YearLevel": "$student_info.YearLevel",
+        }},
+    ]
 
-    # print(get_student_subjects_grades(StudentID=500001))
-    # print(get_subjects())
+    cursor = grades_col.aggregate(pipeline)
+    df = pd.DataFrame(list(cursor))
 
-    pass
+    # Ensure necessary fields exist
+    for col in ["SchoolYear", "Grades"]:
+        if col not in df.columns:
+            df[col] = None
+
+    if "SemesterSchoolYear" in df.columns:
+        df["SchoolYear"] = df["SchoolYear"].fillna(df["SemesterSchoolYear"])
+
+    semesters_map = (
+        df[["SemesterID", "SemesterSchoolYear"]]
+        .dropna()
+        .drop_duplicates()
+        .set_index("SemesterID")["SemesterSchoolYear"]
+        .to_dict()
+    )
+    return df, semesters_map

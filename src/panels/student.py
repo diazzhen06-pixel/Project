@@ -14,25 +14,7 @@ import tempfile
 
 
 
-# ----------------- MongoDB Connection -----------------
-@st.cache_resource
-def get_db():
-    load_dotenv()
-    user = os.getenv("MONGO_USER")
-    password = os.getenv("MONGO_PASS")
-
-    if not user or not password:
-        st.error("❌ Environment variables MONGO_USER or MONGO_PASS are not set.")
-        return None
-
-    try:
-        uri = f"mongodb+srv://{user}:{password}@cluster0.fav2kov.mongodb.net/mit261"
-        client = MongoClient(uri)
-        return client["mit261"]
-    except Exception as e:
-        st.error(f"❌ Database connection failed: {e}")
-        return None
-
+from utils.db import get_db
 
 # ----------------- Student Panel -----------------
 def student_panel():
@@ -41,6 +23,7 @@ def student_panel():
 
     db = get_db()
     if db is None:
+        st.error("Database connection not available.")
         return
 
     students_col = db["students"]
@@ -299,6 +282,3 @@ def student_panel():
             )
 
 
-# ----------------- Run App -----------------
-if __name__ == "__main__":
-    student_panel()
