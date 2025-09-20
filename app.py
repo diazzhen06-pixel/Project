@@ -1,4 +1,10 @@
+import sys
+import os
 import streamlit as st
+
+# Add the 'src' directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+
 from utils.db import get_db
 from utils.data_helper import load_data
 from auth.login import login
