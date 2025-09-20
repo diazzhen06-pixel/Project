@@ -9,7 +9,7 @@ from pymongo import MongoClient
 import time
 
 # from config.settings import MONGODB_URI, CACHE_MAX_AGE
-from helpers.cache_helper import cache_meta, load_or_query
+from utils.cache_helper import cache_meta, load_or_query
 
 
 pd.set_option('display.max_columns', None)
