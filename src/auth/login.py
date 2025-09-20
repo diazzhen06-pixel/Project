@@ -1,6 +1,6 @@
 import streamlit as st
-import helpers.user_helper as h
-from helpers.teacher_helper import get_all_teachers
+from utils import user_helper as h
+from utils.teacher_helper import get_all_teachers
 
 def login(db):
     st.title("Login")
