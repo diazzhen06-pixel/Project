@@ -1,1 +1,1 @@
-streamlit run app/app.py
+python -m streamlit run app/app.py
