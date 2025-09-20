@@ -1,17 +1,12 @@
-import sys
-import os
 import streamlit as st
 
-# Add the 'src' directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
-
-from utils.db import get_db
-from utils.data_helper import load_data
-from auth.login import login
-from panels.registrar_panel import registrar_panel
-from panels.faculty import faculty_panel
-from panels.newfaculty import new_faculty_panel
-from panels.student import student_panel
+from app.src.utils.db import get_db
+from app.src.utils.data_helper import load_data
+from app.src.auth.login import login
+from app.src.panels.registrar_panel import registrar_panel
+from app.src.panels.faculty import faculty_panel
+from app.src.panels.newfaculty import new_faculty_panel
+from app.src.panels.student import student_panel
 
 def main():
     """
