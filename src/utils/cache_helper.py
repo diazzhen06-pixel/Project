@@ -44,3 +44,37 @@ def cache_meta(ttl=600000000):  # default no expiration
             return result
         return wrapper
     return decorator
+
+
+def load_or_query(cache_key, query_func, ttl_minutes=60):
+    """
+    Loads data from a cache file if it exists and is not expired.
+    Otherwise, it runs the query_func, caches the result, and returns it.
+    """
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache_path = os.path.join(CACHE_DIR, cache_key)
+
+    if os.path.exists(cache_path):
+        # Check if the cache file is expired
+        file_mod_time = os.path.getmtime(cache_path)
+        if (time.time() - file_mod_time) / 60 < ttl_minutes:
+            try:
+                with open(cache_path, "rb") as f:
+                    print(f"Loading from cache: {cache_key}")
+                    return pickle.load(f)
+            except (pickle.UnpicklingError, EOFError):
+                print(f"Cache file {cache_path} is corrupted. Re-running query.")
+                os.remove(cache_path)
+        else:
+            print(f"Cache file {cache_path} has expired. Re-running query.")
+            os.remove(cache_path)
+
+
+    print(f"Running query and caching: {cache_key}")
+    result = query_func()
+
+    # Cache the result
+    with open(cache_path, "wb") as f:
+        pickle.dump(result, f)
+
+    return result
